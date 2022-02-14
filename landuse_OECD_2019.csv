@@ -1,0 +1,848 @@
+COU,Country,VAR,Variable,Landuse
+ABW,Aruba,Ara,Arable and cropland % land area,11.111
+ABW,Aruba,For,Forest % land area,2.333
+ABW,Aruba,Oth,Other % land area,86.556
+AFG,Afghanistan,Ara,Arable and cropland % land area,12.281
+AFG,Afghanistan,For,Forest % land area,1.853
+AFG,Afghanistan,Mea,Meadows and pastures % land area,45.996
+AFG,Afghanistan,Oth,Other % land area,39.87
+AGO,Angola,Ara,Arable and cropland % land area,4.183
+AGO,Angola,For,Forest % land area,53.872
+AGO,Angola,Mea,Meadows and pastures % land area,41.5
+AGO,Angola,Oth,Other % land area,0.445
+AIA,Anguilla,For,Forest % land area,61.111
+AIA,Anguilla,Oth,Other % land area,38.889
+ALB,Albania,Ara,Arable and cropland % land area,25.401
+ALB,Albania,For,Forest % land area,28.792
+ALB,Albania,Mea,Meadows and pastures % land area,17.445
+ALB,Albania,Oth,Other % land area,28.288
+AND,Andorra,Ara,Arable and cropland % land area,1.702
+AND,Andorra,For,Forest % land area,34.043
+AND,Andorra,Mea,Meadows and pastures % land area,38.298
+AND,Andorra,Oth,Other % land area,25.957
+ARE,United Arab Emirates,Ara,Arable and cropland % land area,1.273
+ARE,United Arab Emirates,For,Forest % land area,4.468
+ARE,United Arab Emirates,Mea,Meadows and pastures % land area,4.224
+ARE,United Arab Emirates,Oth,Other % land area,90.024
+ARG,Argentina,Ara,Arable and cropland % land area,12.314
+ARG,Argentina,For,Forest % land area,10.48
+ARG,Argentina,Mea,Meadows and pastures % land area,27.289
+ARG,Argentina,Oth,Other % land area,49.917
+ARM,Armenia,Ara,Arable and cropland % land area,17.738
+ARM,Armenia,For,Forest % land area,11.545
+ARM,Armenia,Mea,Meadows and pastures % land area,41.166
+ARM,Armenia,Oth,Other % land area,16.653
+ASM,American Samoa,Ara,Arable and cropland % land area,19.7
+ASM,American Samoa,For,Forest % land area,85.8
+ASM,American Samoa,Mea,Meadows and pastures % land area,0.35
+ATG,Antigua and Barbuda,Ara,Arable and cropland % land area,11.364
+ATG,Antigua and Barbuda,For,Forest % land area,18.591
+ATG,Antigua and Barbuda,Mea,Meadows and pastures % land area,9.091
+ATG,Antigua and Barbuda,Oth,Other % land area,60.955
+AUS,Australia,Ara,Arable and cropland % land area,4.02
+AUS,Australia,For,Forest % land area,17.421
+AUS,Australia,Mea,Meadows and pastures % land area,43.104
+AUS,Australia,Oth,Other % land area,32.683
+AUT,Austria,Ara,Arable and cropland % land area,16.873
+AUT,Austria,For,Forest % land area,47.207
+AUT,Austria,Mea,Meadows and pastures % land area,15.255
+AUT,Austria,Oth,Other % land area,20.664
+AZE,Azerbaijan,Ara,Arable and cropland % land area,28.509
+AZE,Azerbaijan,For,Forest % land area,13.553
+AZE,Azerbaijan,Mea,Meadows and pastures % land area,29.32
+AZE,Azerbaijan,Oth,Other % land area,28.619
+BDI,Burundi,Ara,Arable and cropland % land area,60.358
+BDI,Burundi,For,Forest % land area,10.889
+BDI,Burundi,Mea,Meadows and pastures % land area,18.808
+BDI,Burundi,Oth,Other % land area,9.944
+BEL,Belgium,Ara,Arable and cropland % land area,29.094
+BEL,Belgium,For,Forest % land area,22.764
+BEL,Belgium,Mea,Meadows and pastures % land area,15.702
+BEL,Belgium,Oth,Other % land area,32.364
+BEN,Benin,Ara,Arable and cropland % land area,30.153
+BEN,Benin,For,Forest % land area,28.247
+BEN,Benin,Mea,Meadows and pastures % land area,4.878
+BEN,Benin,Oth,Other % land area,36.723
+BFA,Burkina Faso,Ara,Arable and cropland % land area,22.295
+BFA,Burkina Faso,For,Forest % land area,22.904
+BFA,Burkina Faso,Mea,Meadows and pastures % land area,21.93
+BFA,Burkina Faso,Oth,Other % land area,32.871
+BGD,Bangladesh,Ara,Arable and cropland % land area,67.581
+BGD,Bangladesh,For,Forest % land area,14.469
+BGD,Bangladesh,Mea,Meadows and pastures % land area,4.609
+BGD,Bangladesh,Oth,Other % land area,13.341
+BGR,Bulgaria,Ara,Arable and cropland % land area,33.429
+BGR,Bulgaria,For,Forest % land area,35.741
+BGR,Bulgaria,Mea,Meadows and pastures % land area,12.97
+BGR,Bulgaria,Oth,Other % land area,17.861
+BHR,Bahrain,Ara,Arable and cropland % land area,5.875
+BHR,Bahrain,For,Forest % land area,0.868
+BHR,Bahrain,Mea,Meadows and pastures % land area,5.109
+BHR,Bahrain,Oth,Other % land area,88.148
+BHS,Bahamas,Ara,Arable and cropland % land area,1.199
+BHS,Bahamas,For,Forest % land area,50.935
+BHS,Bahamas,Mea,Meadows and pastures % land area,0.2
+BHS,Bahamas,Oth,Other % land area,47.666
+BIH,Bosnia and Herzegovina,Ara,Arable and cropland % land area,21.895
+BIH,Bosnia and Herzegovina,For,Forest % land area,42.733
+BIH,Bosnia and Herzegovina,Mea,Meadows and pastures % land area,21.387
+BIH,Bosnia and Herzegovina,Oth,Other % land area,13.986
+BLR,Belarus,Ara,Arable and cropland % land area,28.675
+BLR,Belarus,For,Forest % land area,43.126
+BLR,Belarus,Mea,Meadows and pastures % land area,12.652
+BLR,Belarus,Oth,Other % land area,15.532
+BLZ,Belize,Ara,Arable and cropland % land area,5.349
+BLZ,Belize,For,Forest % land area,56.476
+BLZ,Belize,Mea,Meadows and pastures % land area,2.192
+BLZ,Belize,Oth,Other % land area,35.984
+BMU,Bermuda,Ara,Arable and cropland % land area,5.556
+BMU,Bermuda,For,Forest % land area,18.519
+BMU,Bermuda,Oth,Other % land area,75.926
+BOL,Bolivia,Ara,Arable and cropland % land area,4.419
+BOL,Bolivia,For,Forest % land area,47.11
+BOL,Bolivia,Mea,Meadows and pastures % land area,30.462
+BOL,Bolivia,Oth,Other % land area,18.009
+BRA,Brazil,Ara,Arable and cropland % land area,7.6
+BRA,Brazil,For,Forest % land area,59.559
+BRA,Brazil,Mea,Meadows and pastures % land area,20.742
+BRA,Brazil,Oth,Other % land area,12.1
+BRB,Barbados,Ara,Arable and cropland % land area,18.605
+BRB,Barbados,For,Forest % land area,14.651
+BRB,Barbados,Mea,Meadows and pastures % land area,4.651
+BRB,Barbados,Oth,Other % land area,62.093
+BRN,Brunei Darussalam,Ara,Arable and cropland % land area,1.898
+BRN,Brunei Darussalam,For,Forest % land area,72.106
+BRN,Brunei Darussalam,Mea,Meadows and pastures % land area,0.645
+BRN,Brunei Darussalam,Oth,Other % land area,25.351
+BTN,Bhutan,Ara,Arable and cropland % land area,2.622
+BTN,Bhutan,For,Forest % land area,71.397
+BTN,Bhutan,Mea,Meadows and pastures % land area,10.829
+BTN,Bhutan,Oth,Other % land area,15.152
+BWA,Botswana,Ara,Arable and cropland % land area,0.462
+BWA,Botswana,For,Forest % land area,27.126
+BWA,Botswana,Mea,Meadows and pastures % land area,45.171
+BWA,Botswana,Oth,Other % land area,27.24
+CAF,Central African Republic,Ara,Arable and cropland % land area,3.018
+CAF,Central African Republic,For,Forest % land area,35.849
+CAF,Central African Republic,Mea,Meadows and pastures % land area,5.137
+CAF,Central African Republic,Oth,Other % land area,55.997
+CAN,Canada,Ara,Arable and cropland % land area,4.329
+CAN,Canada,For,Forest % land area,38.7
+CAN,Canada,Mea,Meadows and pastures % land area,2.157
+CAN,Canada,Oth,Other % land area,54.684
+CHE,Switzerland,Ara,Arable and cropland % land area,10.725
+CHE,Switzerland,For,Forest % land area,32.029
+CHE,Switzerland,Mea,Meadows and pastures % land area,27.415
+CHE,Switzerland,Oth,Other % land area,29.153
+CHL,Chile,Ara,Arable and cropland % land area,2.227
+CHL,Chile,For,Forest % land area,24.327
+CHL,Chile,Mea,Meadows and pastures % land area,18.849
+CHL,Chile,Oth,Other % land area,54.597
+CHN,China,Ara,Arable and cropland % land area,14.396
+CHN,China,For,Forest % land area,23.141
+CHN,China,Mea,Meadows and pastures % land area,41.681
+CHN,China,Oth,Other % land area,20.782
+CMR,Cameroon,Ara,Arable and cropland % land area,16.395
+CMR,Cameroon,For,Forest % land area,43.148
+CMR,Cameroon,Mea,Meadows and pastures % land area,4.231
+CMR,Cameroon,Oth,Other % land area,36.226
+COD,Democratic Republic of the Congo,Ara,Arable and cropland % land area,5.867
+COD,Democratic Republic of the Congo,For,Forest % land area,56.133
+COD,Democratic Republic of the Congo,Mea,Meadows and pastures % land area,8.028
+COD,Democratic Republic of the Congo,Oth,Other % land area,29.972
+COG,Congo,Ara,Arable and cropland % land area,1.839
+COG,Congo,For,Forest % land area,64.307
+COG,Congo,Mea,Meadows and pastures % land area,29.283
+COG,Congo,Oth,Other % land area,4.571
+COK,Cook Islands,Ara,Arable and cropland % land area,6.25
+COK,Cook Islands,For,Forest % land area,64.958
+COK,Cook Islands,Oth,Other % land area,28.792
+COL,Colombia,Ara,Arable and cropland % land area,8.898
+COL,Colombia,For,Forest % land area,53.485
+COL,Colombia,Mea,Meadows and pastures % land area,35.894
+COL,Colombia,Oth,Other % land area,1.724
+COM,Comoros,Ara,Arable and cropland % land area,62.332
+COM,Comoros,For,Forest % land area,17.926
+COM,Comoros,Mea,Meadows and pastures % land area,8.06
+COM,Comoros,Oth,Other % land area,11.682
+CPV,Cabo Verde,Ara,Arable and cropland % land area,13.4
+CPV,Cabo Verde,For,Forest % land area,11.27
+CPV,Cabo Verde,Mea,Meadows and pastures % land area,6.203
+CPV,Cabo Verde,Oth,Other % land area,69.201
+CRI,Costa Rica,Ara,Arable and cropland % land area,11.271
+CRI,Costa Rica,For,Forest % land area,59.117
+CRI,Costa Rica,Mea,Meadows and pastures % land area,23.502
+CRI,Costa Rica,Oth,Other % land area,6.11
+CUB,Cuba,Ara,Arable and cropland % land area,35.285
+CUB,Cuba,For,Forest % land area,31.233
+CUB,Cuba,Mea,Meadows and pastures % land area,26.382
+CUB,Cuba,Oth,Other % land area,7.1
+CYM,Cayman Islands,Ara,Arable and cropland % land area,2.917
+CYM,Cayman Islands,For,Forest % land area,53
+CYM,Cayman Islands,Mea,Meadows and pastures % land area,8.333
+CYM,Cayman Islands,Oth,Other % land area,35.75
+CYP,Cyprus,Ara,Arable and cropland % land area,13.38
+CYP,Cyprus,For,Forest % land area,18.674
+CYP,Cyprus,Mea,Meadows and pastures % land area,0.169
+CYP,Cyprus,Oth,Other % land area,67.745
+CZE,Czech Republic,Ara,Arable and cropland % land area,32.793
+CZE,Czech Republic,For,Forest % land area,34.651
+CZE,Czech Republic,Mea,Meadows and pastures % land area,12.847
+CZE,Czech Republic,Oth,Other % land area,19.709
+DEU,Germany,Ara,Arable and cropland % land area,34.097
+DEU,Germany,For,Forest % land area,32.683
+DEU,Germany,Mea,Meadows and pastures % land area,13.598
+DEU,Germany,Oth,Other % land area,14.909
+DJI,Djibouti,Ara,Arable and cropland % land area,0.086
+DJI,Djibouti,For,Forest % land area,0.246
+DJI,Djibouti,Mea,Meadows and pastures % land area,73.339
+DJI,Djibouti,Oth,Other % land area,26.329
+DMA,Dominica,Ara,Arable and cropland % land area,30.667
+DMA,Dominica,For,Forest % land area,63.827
+DMA,Dominica,Mea,Meadows and pastures % land area,2.667
+DMA,Dominica,Oth,Other % land area,2.84
+DNK,Denmark,Ara,Arable and cropland % land area,60.483
+DNK,Denmark,For,Forest % land area,15.688
+DNK,Denmark,Mea,Meadows and pastures % land area,5.175
+DNK,Denmark,Oth,Other % land area,18.653
+DOM,Dominican Republic,Ara,Arable and cropland % land area,25.502
+DOM,Dominican Republic,For,Forest % land area,44.215
+DOM,Dominican Republic,Mea,Meadows and pastures % land area,24.777
+DOM,Dominican Republic,Oth,Other % land area,5.506
+DZA,Algeria,Ara,Arable and cropland % land area,3.576
+DZA,Algeria,For,Forest % land area,0.814
+DZA,Algeria,Mea,Meadows and pastures % land area,13.789
+DZA,Algeria,Oth,Other % land area,81.821
+ECU,Ecuador,Ara,Arable and cropland % land area,9.78
+ECU,Ecuador,For,Forest % land area,50.58
+ECU,Ecuador,Mea,Meadows and pastures % land area,11.681
+ECU,Ecuador,Oth,Other % land area,27.959
+EGY,Egypt,Ara,Arable and cropland % land area,3.854
+EGY,Egypt,For,Forest % land area,0.045
+EGY,Egypt,Oth,Other % land area,96.101
+ERI,Eritrea,Ara,Arable and cropland % land area,5.711
+ERI,Eritrea,For,Forest % land area,8.734
+ERI,Eritrea,Mea,Meadows and pastures % land area,56.941
+ERI,Eritrea,Oth,Other % land area,28.614
+ESP,Spain,Ara,Arable and cropland % land area,33.548
+ESP,Spain,For,Forest % land area,37.168
+ESP,Spain,Mea,Meadows and pastures % land area,18.91
+ESP,Spain,Oth,Other % land area,10.374
+EST,Estonia,Ara,Arable and cropland % land area,16.029
+EST,Estonia,For,Forest % land area,56.094
+EST,Estonia,Mea,Meadows and pastures % land area,6.71
+EST,Estonia,Oth,Other % land area,21.169
+ETH,Ethiopia,Ara,Arable and cropland % land area,15.864
+ETH,Ethiopia,For,Forest % land area,15.189
+ETH,Ethiopia,Mea,Meadows and pastures % land area,17.722
+ETH,Ethiopia,Oth,Other % land area,51.226
+FIN,Finland,Ara,Arable and cropland % land area,7.403
+FIN,Finland,For,Forest % land area,73.731
+FIN,Finland,Mea,Meadows and pastures % land area,0.079
+FIN,Finland,Oth,Other % land area,18.787
+FJI,Fiji,Ara,Arable and cropland % land area,13.684
+FJI,Fiji,For,Forest % land area,62.033
+FJI,Fiji,Mea,Meadows and pastures % land area,9.579
+FJI,Fiji,Oth,Other % land area,14.705
+FLK,Falkland Islands,For,Forest % land area,0
+FLK,Falkland Islands,Mea,Meadows and pastures % land area,92.827
+FLK,Falkland Islands,Oth,Other % land area,7.173
+FRA,France,Ara,Arable and cropland % land area,34.837
+FRA,France,For,Forest % land area,31.357
+FRA,France,Mea,Meadows and pastures % land area,17.433
+FRA,France,Oth,Other % land area,16.373
+FRO,Faeroe Islands,Ara,Arable and cropland % land area,2.149
+FRO,Faeroe Islands,For,Forest % land area,0.057
+FRO,Faeroe Islands,Oth,Other % land area,97.794
+FSM,Micronesia,Ara,Arable and cropland % land area,27.143
+FSM,Micronesia,For,Forest % land area,91.986
+FSM,Micronesia,Mea,Meadows and pastures % land area,4.286
+GAB,Gabon,Ara,Arable and cropland % land area,1.921
+GAB,Gabon,For,Forest % land area,91.367
+GAB,Gabon,Mea,Meadows and pastures % land area,6.666
+GAB,Gabon,Oth,Other % land area,0.046
+GBR,United Kingdom,Ara,Arable and cropland % land area,25.344
+GBR,United Kingdom,For,Forest % land area,13.153
+GBR,United Kingdom,Mea,Meadows and pastures % land area,47.079
+GBR,United Kingdom,Oth,Other % land area,13.207
+GEO,Georgia,Ara,Arable and cropland % land area,6.156
+GEO,Georgia,For,Forest % land area,40.616
+GEO,Georgia,Mea,Meadows and pastures % land area,27.918
+GEO,Georgia,Oth,Other % land area,25.31
+GHA,Ghana,Ara,Arable and cropland % land area,22.945
+GHA,Ghana,For,Forest % land area,35.064
+GHA,Ghana,Mea,Meadows and pastures % land area,32.446
+GHA,Ghana,Oth,Other % land area,9.545
+GIB,Gibraltar,For,Forest % land area,0
+GIB,Gibraltar,Oth,Other % land area,100
+GIN,Guinea,Ara,Arable and cropland % land area,15.465
+GIN,Guinea,For,Forest % land area,25.35
+GIN,Guinea,Mea,Meadows and pastures % land area,43.546
+GIN,Guinea,Oth,Other % land area,15.64
+GLP,Guadeloupe,Ara,Arable and cropland % land area,15.525
+GLP,Guadeloupe,For,Forest % land area,44.432
+GLP,Guadeloupe,Mea,Meadows and pastures % land area,15.16
+GLP,Guadeloupe,Oth,Other % land area,24.883
+GMB,Gambia,Ara,Arable and cropland % land area,43.972
+GMB,Gambia,For,Forest % land area,24.545
+GMB,Gambia,Mea,Meadows and pastures % land area,15.81
+GMB,Gambia,Oth,Other % land area,15.672
+GNB,Guinea-Bissau,Ara,Arable and cropland % land area,19.559
+GNB,Guinea-Bissau,For,Forest % land area,70.713
+GNB,Guinea-Bissau,Mea,Meadows and pastures % land area,9.428
+GNB,Guinea-Bissau,Oth,Other % land area,0.3
+GNQ,Equatorial Guinea,Ara,Arable and cropland % land area,6.417
+GNQ,Equatorial Guinea,For,Forest % land area,87.586
+GNQ,Equatorial Guinea,Mea,Meadows and pastures % land area,3.708
+GNQ,Equatorial Guinea,Oth,Other % land area,2.289
+GRC,Greece,Ara,Arable and cropland % land area,24.993
+GRC,Greece,For,Forest % land area,30.27
+GRC,Greece,Mea,Meadows and pastures % land area,22.358
+GRC,Greece,Oth,Other % land area,22.332
+GRD,Grenada,Ara,Arable and cropland % land area,20.588
+GRD,Grenada,For,Forest % land area,52.059
+GRD,Grenada,Mea,Meadows and pastures % land area,2.941
+GRD,Grenada,Oth,Other % land area,24.412
+GRL,Greenland,For,Forest % land area,0.001
+GRL,Greenland,Mea,Meadows and pastures % land area,0.592
+GRL,Greenland,Oth,Other % land area,99.407
+GTM,Guatemala,Ara,Arable and cropland % land area,19.084
+GTM,Guatemala,For,Forest % land area,33.029
+GTM,Guatemala,Mea,Meadows and pastures % land area,16.9
+GTM,Guatemala,Oth,Other % land area,30.987
+GUM,Guam,Ara,Arable and cropland % land area,14.815
+GUM,Guam,For,Forest % land area,51.852
+GUM,Guam,Mea,Meadows and pastures % land area,14.815
+GUM,Guam,Oth,Other % land area,18.519
+GUY,Guyana,Ara,Arable and cropland % land area,2.337
+GUY,Guyana,For,Forest % land area,93.597
+GUY,Guyana,Mea,Meadows and pastures % land area,3.969
+GUY,Guyana,Oth,Other % land area,0.098
+HND,Honduras,Ara,Arable and cropland % land area,14.264
+HND,Honduras,For,Forest % land area,57.022
+HND,Honduras,Mea,Meadows and pastures % land area,17.115
+HND,Honduras,Oth,Other % land area,11.599
+HRV,Croatia,Ara,Arable and cropland % land area,16.028
+HRV,Croatia,For,Forest % land area,34.605
+HRV,Croatia,Mea,Meadows and pastures % land area,10.846
+HRV,Croatia,Oth,Other % land area,36.352
+HTI,Haiti,Ara,Arable and cropland % land area,48.984
+HTI,Haiti,For,Forest % land area,12.714
+HTI,Haiti,Mea,Meadows and pastures % land area,17.779
+HTI,Haiti,Oth,Other % land area,20.522
+HUN,Hungary,Ara,Arable and cropland % land area,49.178
+HUN,Hungary,For,Forest % land area,22.512
+HUN,Hungary,Mea,Meadows and pastures % land area,8.657
+HUN,Hungary,Oth,Other % land area,17.264
+IDN,Indonesia,Ara,Arable and cropland % land area,27.323
+IDN,Indonesia,For,Forest % land area,49.394
+IDN,Indonesia,Mea,Meadows and pastures % land area,5.859
+IDN,Indonesia,Oth,Other % land area,17.424
+IND,India,Ara,Arable and cropland % land area,56.948
+IND,India,For,Forest % land area,24.181
+IND,India,Mea,Meadows and pastures % land area,3.451
+IND,India,Oth,Other % land area,15.42
+IRL,Ireland,Ara,Arable and cropland % land area,6.445
+IRL,Ireland,For,Forest % land area,11.294
+IRL,Ireland,Mea,Meadows and pastures % land area,59.225
+IRL,Ireland,Oth,Other % land area,23.036
+IRN,Iran,Ara,Arable and cropland % land area,10.766
+IRN,Iran,For,Forest % land area,6.596
+IRN,Iran,Mea,Meadows and pastures % land area,18.098
+IRN,Iran,Oth,Other % land area,64.54
+IRQ,Iraq,Ara,Arable and cropland % land area,12.093
+IRQ,Iraq,For,Forest % land area,1.9
+IRQ,Iraq,Mea,Meadows and pastures % land area,9.214
+IRQ,Iraq,Oth,Other % land area,76.793
+ISL,Iceland,Ara,Arable and cropland % land area,1.2
+ISL,Iceland,For,Forest % land area,0.503
+ISL,Iceland,Mea,Meadows and pastures % land area,17.366
+ISL,Iceland,Oth,Other % land area,80.931
+ISR,Israel,Ara,Arable and cropland % land area,22.107
+ISR,Israel,For,Forest % land area,6.47
+ISR,Israel,Mea,Meadows and pastures % land area,7.394
+ISR,Israel,Oth,Other % land area,64.03
+ITA,Italy,Ara,Arable and cropland % land area,31.547
+ITA,Italy,For,Forest % land area,32.167
+ITA,Italy,Mea,Meadows and pastures % land area,12.823
+ITA,Italy,Oth,Other % land area,23.365
+JAM,Jamaica,Ara,Arable and cropland % land area,19.852
+JAM,Jamaica,For,Forest % land area,54.755
+JAM,Jamaica,Mea,Meadows and pastures % land area,21.145
+JAM,Jamaica,Oth,Other % land area,4.247
+JOR,Jordan,Ara,Arable and cropland % land area,3.247
+JOR,Jordan,For,Forest % land area,1.098
+JOR,Jordan,Mea,Meadows and pastures % land area,8.356
+JOR,Jordan,Oth,Other % land area,87.299
+JPN,Japan,Ara,Arable and cropland % land area,12.063
+JPN,Japan,For,Forest % land area,68.409
+JPN,Japan,Oth,Other % land area,19.528
+KAZ,Kazakhstan,Ara,Arable and cropland % land area,11.108
+KAZ,Kazakhstan,For,Forest % land area,1.269
+KAZ,Kazakhstan,Mea,Meadows and pastures % land area,68.328
+KAZ,Kazakhstan,Oth,Other % land area,19.295
+KEN,Kenya,Ara,Arable and cropland % land area,11.122
+KEN,Kenya,For,Forest % land area,6.345
+KEN,Kenya,Mea,Meadows and pastures % land area,37.425
+KEN,Kenya,Oth,Other % land area,45.108
+KGZ,Kyrgyzstan,Ara,Arable and cropland % land area,7.112
+KGZ,Kyrgyzstan,For,Forest % land area,6.763
+KGZ,Kyrgyzstan,Mea,Meadows and pastures % land area,46.947
+KGZ,Kyrgyzstan,Oth,Other % land area,39.179
+KHM,Cambodia,Ara,Arable and cropland % land area,23.034
+KHM,Cambodia,For,Forest % land area,46.59
+KHM,Cambodia,Mea,Meadows and pastures % land area,8.498
+KHM,Cambodia,Oth,Other % land area,21.878
+KIR,Kiribati,Ara,Arable and cropland % land area,41.975
+KIR,Kiribati,For,Forest % land area,1.457
+KIR,Kiribati,Oth,Other % land area,56.568
+KNA,Saint Kitts and Nevis,Ara,Arable and cropland % land area,19.615
+KNA,Saint Kitts and Nevis,For,Forest % land area,42.308
+KNA,Saint Kitts and Nevis,Mea,Meadows and pastures % land area,3.462
+KNA,Saint Kitts and Nevis,Oth,Other % land area,34.615
+KOR,S Korea,Ara,Arable and cropland % land area,16.199
+KOR,S Korea,For,Forest % land area,64.518
+KOR,S Korea,Mea,Meadows and pastures % land area,0.574
+KOR,S Korea,Oth,Other % land area,18.709
+KWT,Kuwait,Ara,Arable and cropland % land area,0.786
+KWT,Kuwait,For,Forest % land area,0.351
+KWT,Kuwait,Mea,Meadows and pastures % land area,7.632
+KWT,Kuwait,Oth,Other % land area,91.232
+LAO,Laos,Ara,Arable and cropland % land area,7.448
+LAO,Laos,For,Forest % land area,72.054
+LAO,Laos,Mea,Meadows and pastures % land area,2.925
+LAO,Laos,Oth,Other % land area,17.574
+LBN,Lebanon,Ara,Arable and cropland % land area,25.22
+LBN,Lebanon,For,Forest % land area,13.952
+LBN,Lebanon,Mea,Meadows and pastures % land area,39.101
+LBN,Lebanon,Oth,Other % land area,21.727
+LBR,Liberia,Ara,Arable and cropland % land area,7.267
+LBR,Liberia,For,Forest % land area,79.399
+LBR,Liberia,Mea,Meadows and pastures % land area,13.02
+LBR,Liberia,Oth,Other % land area,0.314
+LBY,Libya,Ara,Arable and cropland % land area,1.165
+LBY,Libya,For,Forest % land area,0.123
+LBY,Libya,Mea,Meadows and pastures % land area,7.559
+LBY,Libya,Oth,Other % land area,91.153
+LCA,Saint Lucia,Ara,Arable and cropland % land area,16.393
+LCA,Saint Lucia,For,Forest % land area,34.049
+LCA,Saint Lucia,Mea,Meadows and pastures % land area,0.984
+LCA,Saint Lucia,Oth,Other % land area,48.574
+LIE,Liechtenstein,Ara,Arable and cropland % land area,9.25
+LIE,Liechtenstein,For,Forest % land area,41.875
+LIE,Liechtenstein,Mea,Meadows and pastures % land area,23.688
+LIE,Liechtenstein,Oth,Other % land area,25.188
+LKA,Sri Lanka,Ara,Arable and cropland % land area,38.335
+LKA,Sri Lanka,For,Forest % land area,34.207
+LKA,Sri Lanka,Mea,Meadows and pastures % land area,7.112
+LKA,Sri Lanka,Oth,Other % land area,20.075
+LSO,Lesotho,Ara,Arable and cropland % land area,4.677
+LSO,Lesotho,For,Forest % land area,1.137
+LSO,Lesotho,Mea,Meadows and pastures % land area,65.876
+LSO,Lesotho,Oth,Other % land area,28.31
+LTU,Lithuania,Ara,Arable and cropland % land area,35.883
+LTU,Lithuania,For,Forest % land area,35.133
+LTU,Lithuania,Mea,Meadows and pastures % land area,11.626
+LTU,Lithuania,Oth,Other % land area,17.359
+LUX,Luxembourg,Ara,Arable and cropland % land area,24.671
+LUX,Luxembourg,For,Forest % land area,34.454
+LUX,Luxembourg,Mea,Meadows and pastures % land area,26.368
+LUX,Luxembourg,Oth,Other % land area,13.771
+LVA,Latvia,Ara,Arable and cropland % land area,21.341
+LVA,Latvia,For,Forest % land area,54.75
+LVA,Latvia,Mea,Meadows and pastures % land area,10.156
+LVA,Latvia,Oth,Other % land area,13.753
+MAR,Morocco,Ara,Arable and cropland % land area,19.296
+MAR,Morocco,For,Forest % land area,12.844
+MAR,Morocco,Mea,Meadows and pastures % land area,47.054
+MAR,Morocco,Oth,Other % land area,20.61
+MCO,Monaco,For,Forest % land area,0
+MCO,Monaco,Oth,Other % land area,100
+MDA,Moldova,Ara,Arable and cropland % land area,58.435
+MDA,Moldova,For,Forest % land area,11.753
+MDA,Moldova,Mea,Meadows and pastures % land area,10.336
+MDA,Moldova,Oth,Other % land area,18.859
+MDG,Madagascar,Ara,Arable and cropland % land area,6.188
+MDG,Madagascar,For,Forest % land area,21.387
+MDG,Madagascar,Mea,Meadows and pastures % land area,64.103
+MDG,Madagascar,Oth,Other % land area,8.322
+MDV,Maldives,Ara,Arable and cropland % land area,18
+MDV,Maldives,For,Forest % land area,2.733
+MDV,Maldives,Mea,Meadows and pastures % land area,3.333
+MDV,Maldives,Oth,Other % land area,75.933
+MEX,Mexico,Ara,Arable and cropland % land area,11.384
+MEX,Mexico,For,Forest % land area,33.859
+MEX,Mexico,Mea,Meadows and pastures % land area,38.055
+MEX,Mexico,Oth,Other % land area,16.695
+MHL,Marshall Islands,Ara,Arable and cropland % land area,47.222
+MHL,Marshall Islands,For,Forest % land area,52.222
+MHL,Marshall Islands,Mea,Meadows and pastures % land area,0.556
+MHL,Marshall Islands,Oth,Other % land area,0
+MKD,North Macedonia,Ara,Arable and cropland % land area,18.239
+MKD,North Macedonia,For,Forest % land area,39.71
+MKD,North Macedonia,Mea,Meadows and pastures % land area,31.919
+MKD,North Macedonia,Oth,Other % land area,10.131
+MLI,Mali,Ara,Arable and cropland % land area,5.377
+MLI,Mali,For,Forest % land area,10.897
+MLI,Mali,Mea,Meadows and pastures % land area,28.389
+MLI,Mali,Oth,Other % land area,55.337
+MLT,Malta,Ara,Arable and cropland % land area,32.438
+MLT,Malta,For,Forest % land area,1.438
+MLT,Malta,Oth,Other % land area,66.125
+MMR,Myanmar,Ara,Arable and cropland % land area,19.152
+MMR,Myanmar,For,Forest % land area,44.176
+MMR,Myanmar,Mea,Meadows and pastures % land area,0.457
+MMR,Myanmar,Oth,Other % land area,36.216
+MNG,Mongolia,Ara,Arable and cropland % land area,0.857
+MNG,Mongolia,For,Forest % land area,9.102
+MNG,Mongolia,Mea,Meadows and pastures % land area,71.947
+MNG,Mongolia,Oth,Other % land area,18.028
+MNP,Northern Mariana Islands,Ara,Arable and cropland % land area,0.37
+MNP,Northern Mariana Islands,For,Forest % land area,52.957
+MNP,Northern Mariana Islands,Mea,Meadows and pastures % land area,0.804
+MNP,Northern Mariana Islands,Oth,Other % land area,45.87
+MOZ,Mozambique,Ara,Arable and cropland % land area,7.566
+MOZ,Mozambique,For,Forest % land area,47.008
+MOZ,Mozambique,Mea,Meadows and pastures % land area,45.098
+MOZ,Mozambique,Oth,Other % land area,0.328
+MRT,Mauritania,Ara,Arable and cropland % land area,0.399
+MRT,Mauritania,For,Forest % land area,0.309
+MRT,Mauritania,Mea,Meadows and pastures % land area,38.081
+MRT,Mauritania,Oth,Other % land area,61.212
+MSR,Montserrat,Ara,Arable and cropland % land area,20
+MSR,Montserrat,For,Forest % land area,25
+MSR,Montserrat,Mea,Meadows and pastures % land area,10
+MSR,Montserrat,Oth,Other % land area,45
+MTQ,Martinique,Ara,Arable and cropland % land area,14.717
+MTQ,Martinique,For,Forest % land area,49.142
+MTQ,Martinique,Mea,Meadows and pastures % land area,14.811
+MTQ,Martinique,Oth,Other % land area,21.33
+MUS,Mauritius,Ara,Arable and cropland % land area,38.916
+MUS,Mauritius,For,Forest % land area,19.079
+MUS,Mauritius,Mea,Meadows and pastures % land area,3.448
+MUS,Mauritius,Oth,Other % land area,38.557
+MWI,Malawi,Ara,Arable and cropland % land area,40.305
+MWI,Malawi,For,Forest % land area,24.223
+MWI,Malawi,Mea,Meadows and pastures % land area,19.622
+MWI,Malawi,Oth,Other % land area,15.85
+MYS,Malaysia,Ara,Arable and cropland % land area,25.22
+MYS,Malaysia,For,Forest % land area,58.33
+MYS,Malaysia,Mea,Meadows and pastures % land area,0.867
+MYS,Malaysia,Oth,Other % land area,15.583
+MYT,Mayotte,Ara,Arable and cropland % land area,53.422
+MYT,Mayotte,For,Forest % land area,37.273
+MYT,Mayotte,Mea,Meadows and pastures % land area,0.053
+MYT,Mayotte,Oth,Other % land area,9.251
+NAM,Namibia,Ara,Arable and cropland % land area,0.984
+NAM,Namibia,For,Forest % land area,8.15
+NAM,Namibia,Mea,Meadows and pastures % land area,46.156
+NAM,Namibia,Oth,Other % land area,44.71
+NCL,New Caledonia,Ara,Arable and cropland % land area,0.531
+NCL,New Caledonia,For,Forest % land area,45.849
+NCL,New Caledonia,Mea,Meadows and pastures % land area,9.537
+NCL,New Caledonia,Oth,Other % land area,44.084
+NER,Niger,Ara,Arable and cropland % land area,14.066
+NER,Niger,For,Forest % land area,0.862
+NER,Niger,Mea,Meadows and pastures % land area,22.722
+NER,Niger,Oth,Other % land area,62.349
+NFK,Norfolk Island,For,Forest % land area,12.25
+NFK,Norfolk Island,Mea,Meadows and pastures % land area,25
+NFK,Norfolk Island,Oth,Other % land area,62.75
+NGA,Nigeria,Ara,Arable and cropland % land area,44.468
+NGA,Nigeria,For,Forest % land area,23.925
+NGA,Nigeria,Mea,Meadows and pastures % land area,31.428
+NGA,Nigeria,Oth,Other % land area,0.179
+NIC,Nicaragua,Ara,Arable and cropland % land area,14.875
+NIC,Nicaragua,For,Forest % land area,29.147
+NIC,Nicaragua,Mea,Meadows and pastures % land area,27.215
+NIC,Nicaragua,Oth,Other % land area,28.764
+NIU,Niue,Ara,Arable and cropland % land area,15.385
+NIU,Niue,For,Forest % land area,72.538
+NIU,Niue,Mea,Meadows and pastures % land area,3.846
+NIU,Niue,Oth,Other % land area,8.231
+NLD,Netherlands,Ara,Arable and cropland % land area,31.149
+NLD,Netherlands,For,Forest % land area,10.947
+NLD,Netherlands,Mea,Meadows and pastures % land area,22.81
+NLD,Netherlands,Oth,Other % land area,35.094
+NOR,Norway,Ara,Arable and cropland % land area,2.199
+NOR,Norway,For,Forest % land area,33.34
+NOR,Norway,Mea,Meadows and pastures % land area,0.49
+NOR,Norway,Oth,Other % land area,63.971
+NPL,Nepal,Ara,Arable and cropland % land area,16.224
+NPL,Nepal,For,Forest % land area,41.591
+NPL,Nepal,Mea,Meadows and pastures % land area,12.524
+NPL,Nepal,Oth,Other % land area,29.661
+NRU,Nauru,Ara,Arable and cropland % land area,20
+NRU,Nauru,For,Forest % land area,0
+NRU,Nauru,Oth,Other % land area,80
+NZL,New Zealand,Ara,Arable and cropland % land area,2.355
+NZL,New Zealand,For,Forest % land area,37.467
+NZL,New Zealand,Mea,Meadows and pastures % land area,36.934
+NZL,New Zealand,Oth,Other % land area,23.244
+OECD,OECD Total,Ara,Arable and cropland % land area,11.247
+OECD,OECD Total,For,Forest % land area,32.755
+OECD,OECD Total,Mea,Meadows and pastures % land area,22.848
+OECD,OECD Total,Oth,Other % land area,32.447
+OMN,Oman,Ara,Arable and cropland % land area,0.357
+OMN,Oman,For,Forest % land area,0.008
+OMN,Oman,Mea,Meadows and pastures % land area,4.365
+OMN,Oman,Oth,Other % land area,95.27
+PAK,Pakistan,Ara,Arable and cropland % land area,40.603
+PAK,Pakistan,For,Forest % land area,4.887
+PAK,Pakistan,Mea,Meadows and pastures % land area,6.486
+PAK,Pakistan,Oth,Other % land area,48.024
+PAN,Panama,Ara,Arable and cropland % land area,10.111
+PAN,Panama,For,Forest % land area,56.959
+PAN,Panama,Mea,Meadows and pastures % land area,20.342
+PAN,Panama,Oth,Other % land area,12.588
+PCN,Pitcairn,For,Forest % land area,74.468
+PCN,Pitcairn,Oth,Other % land area,25.532
+PER,Peru,Ara,Arable and cropland % land area,4.436
+PER,Peru,For,Forest % land area,56.643
+PER,Peru,Mea,Meadows and pastures % land area,14.688
+PER,Peru,Oth,Other % land area,24.233
+PHL,Philippines,Ara,Arable and cropland % land area,36.69
+PHL,Philippines,For,Forest % land area,23.992
+PHL,Philippines,Mea,Meadows and pastures % land area,5.031
+PHL,Philippines,Oth,Other % land area,34.287
+PLW,Palau,Ara,Arable and cropland % land area,5
+PLW,Palau,For,Forest % land area,89.848
+PLW,Palau,Mea,Meadows and pastures % land area,4.348
+PLW,Palau,Oth,Other % land area,0.804
+PNG,Papua New Guinea,Ara,Arable and cropland % land area,2.208
+PNG,Papua New Guinea,For,Forest % land area,79.25
+PNG,Papua New Guinea,Mea,Meadows and pastures % land area,0.42
+PNG,Papua New Guinea,Oth,Other % land area,18.122
+POL,Poland,Ara,Arable and cropland % land area,37.225
+POL,Poland,For,Forest % land area,30.94
+POL,Poland,Mea,Meadows and pastures % land area,10.219
+POL,Poland,Oth,Other % land area,21.074
+PRI,Puerto Rico,Ara,Arable and cropland % land area,7.351
+PRI,Puerto Rico,For,Forest % land area,55.901
+PRI,Puerto Rico,Mea,Meadows and pastures % land area,11.578
+PRI,Puerto Rico,Oth,Other % land area,25.17
+PRK,N Korea,Ara,Arable and cropland % land area,21.427
+PRK,N Korea,For,Forest % land area,50.256
+PRK,N Korea,Mea,Meadows and pastures % land area,0.415
+PRK,N Korea,Oth,Other % land area,27.902
+PRT,Portugal,Ara,Arable and cropland % land area,18.538
+PRT,Portugal,For,Forest % land area,36.155
+PRT,Portugal,Mea,Meadows and pastures % land area,20.477
+PRT,Portugal,Oth,Other % land area,24.64
+PRY,Paraguay,Ara,Arable and cropland % land area,12.142
+PRY,Paraguay,For,Forest % land area,41.232
+PRY,Paraguay,Mea,Meadows and pastures % land area,42.789
+PRY,Paraguay,Oth,Other % land area,3.837
+PYF,French Polynesia,Ara,Arable and cropland % land area,7.347
+PYF,French Polynesia,For,Forest % land area,43.06
+PYF,French Polynesia,Mea,Meadows and pastures % land area,5.762
+PYF,French Polynesia,Oth,Other % land area,43.832
+QAT,Qatar,Ara,Arable and cropland % land area,1.48
+QAT,Qatar,For,Forest % land area,0
+QAT,Qatar,Mea,Meadows and pastures % land area,4.352
+QAT,Qatar,Oth,Other % land area,94.169
+ROU,Romania,Ara,Arable and cropland % land area,40.76
+ROU,Romania,For,Forest % land area,30.116
+ROU,Romania,Mea,Meadows and pastures % land area,19.332
+ROU,Romania,Oth,Other % land area,9.792
+RUS,Russia,Ara,Arable and cropland % land area,7.538
+RUS,Russia,For,Forest % land area,49.784
+RUS,Russia,Mea,Meadows and pastures % land area,5.621
+RUS,Russia,Oth,Other % land area,37.057
+RWA,Rwanda,Ara,Arable and cropland % land area,56.818
+RWA,Rwanda,For,Forest % land area,11.147
+RWA,Rwanda,Mea,Meadows and pastures % land area,16.619
+RWA,Rwanda,Oth,Other % land area,15.415
+SAU,Saudi Arabia,Ara,Arable and cropland % land area,1.674
+SAU,Saudi Arabia,For,Forest % land area,0.454
+SAU,Saudi Arabia,Mea,Meadows and pastures % land area,79.081
+SAU,Saudi Arabia,Oth,Other % land area,18.791
+SDN,Sudan,Ara,Arable and cropland % land area,10.811
+SDN,Sudan,For,Forest % land area,10.021
+SDN,Sudan,Mea,Meadows and pastures % land area,26.062
+SDN,Sudan,Oth,Other % land area,53.106
+SEN,Senegal,Ara,Arable and cropland % land area,17.026
+SEN,Senegal,For,Forest % land area,42.114
+SEN,Senegal,Mea,Meadows and pastures % land area,29.086
+SEN,Senegal,Oth,Other % land area,11.774
+SGP,Singapore,Ara,Arable and cropland % land area,0.922
+SGP,Singapore,For,Forest % land area,21.997
+SGP,Singapore,Oth,Other % land area,77.081
+SLB,Solomon Islands,Ara,Arable and cropland % land area,3.894
+SLB,Solomon Islands,For,Forest % land area,90.164
+SLB,Solomon Islands,Mea,Meadows and pastures % land area,0.286
+SLB,Solomon Islands,Oth,Other % land area,5.656
+SLE,Sierra Leone,Ara,Arable and cropland % land area,24.231
+SLE,Sierra Leone,For,Forest % land area,35.392
+SLE,Sierra Leone,Mea,Meadows and pastures % land area,30.479
+SLE,Sierra Leone,Oth,Other % land area,9.897
+SLV,El Salvador,Ara,Arable and cropland % land area,42.519
+SLV,El Salvador,For,Forest % land area,28.397
+SLV,El Salvador,Mea,Meadows and pastures % land area,15.188
+SLV,El Salvador,Oth,Other % land area,13.896
+SMR,San Marino,Ara,Arable and cropland % land area,38.333
+SMR,San Marino,For,Forest % land area,16.667
+SMR,San Marino,Oth,Other % land area,45
+SOM,Somalia,Ara,Arable and cropland % land area,1.793
+SOM,Somalia,For,Forest % land area,9.655
+SOM,Somalia,Mea,Meadows and pastures % land area,68.543
+SOM,Somalia,Oth,Other % land area,20.009
+SPM,Saint Pierre and Miquelon,Ara,Arable and cropland % land area,8.696
+SPM,Saint Pierre and Miquelon,For,Forest % land area,5.391
+SPM,Saint Pierre and Miquelon,Oth,Other % land area,85.913
+STP,Sao Tome and Principe,Ara,Arable and cropland % land area,44.792
+STP,Sao Tome and Principe,For,Forest % land area,54.708
+STP,Sao Tome and Principe,Mea,Meadows and pastures % land area,1.042
+SUR,Suriname,Ara,Arable and cropland % land area,0.436
+SUR,Suriname,For,Forest % land area,97.491
+SUR,Suriname,Mea,Meadows and pastures % land area,0.103
+SUR,Suriname,Oth,Other % land area,1.971
+SVK,Slovak Republic,Ara,Arable and cropland % land area,28.432
+SVK,Slovak Republic,For,Forest % land area,40.056
+SVK,Slovak Republic,Mea,Meadows and pastures % land area,10.774
+SVK,Slovak Republic,Oth,Other % land area,19.574
+SVN,Slovenia,Ara,Arable and cropland % land area,11.644
+SVN,Slovenia,For,Forest % land area,61.573
+SVN,Slovenia,Mea,Meadows and pastures % land area,18.763
+SVN,Slovenia,Oth,Other % land area,7.812
+SWE,Sweden,Ara,Arable and cropland % land area,6.245
+SWE,Sweden,For,Forest % land area,68.699
+SWE,Sweden,Mea,Meadows and pastures % land area,1.133
+SWE,Sweden,Oth,Other % land area,23.923
+SWZ,Eswatini,Ara,Arable and cropland % land area,11.047
+SWZ,Eswatini,For,Forest % land area,28.858
+SWZ,Eswatini,Mea,Meadows and pastures % land area,60
+SWZ,Eswatini,Oth,Other % land area,0.096
+SYC,Seychelles,Ara,Arable and cropland % land area,3.37
+SYC,Seychelles,For,Forest % land area,73.261
+SYC,Seychelles,Oth,Other % land area,23.37
+SYR,Syrian Arab Republic,Ara,Arable and cropland % land area,31.22
+SYR,Syrian Arab Republic,For,Forest % land area,2.843
+SYR,Syrian Arab Republic,Mea,Meadows and pastures % land area,44.59
+SYR,Syrian Arab Republic,Oth,Other % land area,21.347
+TCA,Turks and Caicos Islands,Ara,Arable and cropland % land area,1.053
+TCA,Turks and Caicos Islands,For,Forest % land area,11.074
+TCA,Turks and Caicos Islands,Oth,Other % land area,87.874
+TCD,Chad,Ara,Arable and cropland % land area,4.16
+TCD,Chad,For,Forest % land area,3.512
+TCD,Chad,Mea,Meadows and pastures % land area,35.737
+TCD,Chad,Oth,Other % land area,56.591
+TGO,Togo,Ara,Arable and cropland % land area,51.848
+TGO,Togo,For,Forest % land area,22.288
+TGO,Togo,Mea,Meadows and pastures % land area,18.386
+TGO,Togo,Oth,Other % land area,7.479
+THA,Thailand,Ara,Arable and cropland % land area,41.712
+THA,Thailand,For,Forest % land area,38.969
+THA,Thailand,Mea,Meadows and pastures % land area,1.566
+THA,Thailand,Oth,Other % land area,17.753
+TJK,Tajikistan,Ara,Arable and cropland % land area,6.144
+TJK,Tajikistan,For,Forest % land area,3.046
+TJK,Tajikistan,Mea,Meadows and pastures % land area,27.92
+TJK,Tajikistan,Oth,Other % land area,62.89
+TKL,Tokelau,Ara,Arable and cropland % land area,60
+TKL,Tokelau,For,Forest % land area,0
+TKL,Tokelau,Oth,Other % land area,40
+TKM,Turkmenistan,Ara,Arable and cropland % land area,4.256
+TKM,Turkmenistan,For,Forest % land area,8.782
+TKM,Turkmenistan,Mea,Meadows and pastures % land area,67.751
+TKM,Turkmenistan,Oth,Other % land area,19.211
+TLS,Timor-Leste,Ara,Arable and cropland % land area,15.467
+TLS,Timor-Leste,For,Forest % land area,62.038
+TLS,Timor-Leste,Mea,Meadows and pastures % land area,10.087
+TLS,Timor-Leste,Oth,Other % land area,12.408
+TON,Tonga,Ara,Arable and cropland % land area,43.056
+TON,Tonga,For,Forest % land area,12.431
+TON,Tonga,Mea,Meadows and pastures % land area,5.556
+TON,Tonga,Oth,Other % land area,38.958
+TTO,Trinidad and Tobago,Ara,Arable and cropland % land area,9.162
+TTO,Trinidad and Tobago,For,Forest % land area,44.563
+TTO,Trinidad and Tobago,Mea,Meadows and pastures % land area,1.365
+TTO,Trinidad and Tobago,Oth,Other % land area,44.91
+TUN,Tunisia,Ara,Arable and cropland % land area,32.138
+TUN,Tunisia,For,Forest % land area,4.513
+TUN,Tunisia,Mea,Meadows and pastures % land area,30.574
+TUN,Tunisia,Oth,Other % land area,32.774
+TUR,Turkey,Ara,Arable and cropland % land area,30.013
+TUR,Turkey,For,Forest % land area,28.669
+TUR,Turkey,Mea,Meadows and pastures % land area,18.992
+TUR,Turkey,Oth,Other % land area,22.326
+TUV,Tuvalu,Ara,Arable and cropland % land area,60
+TUV,Tuvalu,For,Forest % land area,33.333
+TUV,Tuvalu,Oth,Other % land area,6.667
+TZA,Tanzania,Ara,Arable and cropland % land area,17.668
+TZA,Tanzania,For,Forest % land area,52.172
+TZA,Tanzania,Mea,Meadows and pastures % land area,27.094
+TZA,Tanzania,Oth,Other % land area,3.066
+UGA,Uganda,Ara,Arable and cropland % land area,45.382
+UGA,Uganda,For,Forest % land area,11.865
+UGA,Uganda,Mea,Meadows and pastures % land area,26.506
+UGA,Uganda,Oth,Other % land area,16.247
+UKR,Ukraine,Ara,Arable and cropland % land area,58.297
+UKR,Ukraine,For,Forest % land area,16.714
+UKR,Ukraine,Mea,Meadows and pastures % land area,13.003
+UKR,Ukraine,Oth,Other % land area,10.984
+URY,Uruguay,Ara,Arable and cropland % land area,11.696
+URY,Uruguay,For,Forest % land area,11.484
+URY,Uruguay,Mea,Meadows and pastures % land area,68.564
+URY,Uruguay,Oth,Other % land area,8.256
+USA,United States,Ara,Arable and cropland % land area,17.539
+USA,United States,For,Forest % land area,33.867
+USA,United States,Mea,Meadows and pastures % land area,26.824
+USA,United States,Oth,Other % land area,21.77
+UZB,Uzbekistan,Ara,Arable and cropland % land area,10.072
+UZB,Uzbekistan,For,Forest % land area,8.316
+UZB,Uzbekistan,Mea,Meadows and pastures % land area,47.935
+UZB,Uzbekistan,Oth,Other % land area,33.677
+VAT,Holy See,For,Forest % land area,0
+VAT,Holy See,Oth,Other % land area,100
+VCT,Saint Vincent and the Grenadines,Ara,Arable and cropland % land area,12.821
+VCT,Saint Vincent and the Grenadines,For,Forest % land area,73.18
+VCT,Saint Vincent and the Grenadines,Mea,Meadows and pastures % land area,5.128
+VCT,Saint Vincent and the Grenadines,Oth,Other % land area,8.872
+VEN,Venezuela,Ara,Arable and cropland % land area,3.741
+VEN,Venezuela,For,Forest % land area,52.46
+VEN,Venezuela,Mea,Meadows and pastures % land area,20.634
+VEN,Venezuela,Oth,Other % land area,23.165
+VGB,British Virgin Islands,Ara,Arable and cropland % land area,13.333
+VGB,British Virgin Islands,For,Forest % land area,24.133
+VGB,British Virgin Islands,Mea,Meadows and pastures % land area,33.333
+VGB,British Virgin Islands,Oth,Other % land area,29.2
+VIR,United States Virgin Islands,Ara,Arable and cropland % land area,3.143
+VIR,United States Virgin Islands,For,Forest % land area,56.457
+VIR,United States Virgin Islands,Mea,Meadows and pastures % land area,6.286
+VIR,United States Virgin Islands,Oth,Other % land area,34.114
+VNM,Viet Nam,Ara,Arable and cropland % land area,37.476
+VNM,Viet Nam,For,Forest % land area,46.477
+VNM,Viet Nam,Mea,Meadows and pastures % land area,2.048
+VNM,Viet Nam,Oth,Other % land area,13.999
+VUT,Vanuatu,Ara,Arable and cropland % land area,11.895
+VUT,Vanuatu,For,Forest % land area,36.284
+VUT,Vanuatu,Mea,Meadows and pastures % land area,3.445
+VUT,Vanuatu,Oth,Other % land area,48.376
+WLD,World,Ara,Arable and cropland % land area,11.942
+WLD,World,For,Forest % land area,31.227
+WLD,World,Mea,Meadows and pastures % land area,24.528
+WLD,World,Oth,Other % land area,32.126
+WLF,Wallis and Futuna,Ara,Arable and cropland % land area,42.857
+WLF,Wallis and Futuna,For,Forest % land area,41.643
+WLF,Wallis and Futuna,Oth,Other % land area,15.5
+WSM,Samoa,Ara,Arable and cropland % land area,22.473
+WSM,Samoa,For,Forest % land area,57.297
+WSM,Samoa,Mea,Meadows and pastures % land area,4.276
+WSM,Samoa,Oth,Other % land area,15.954
+YEM,Yemen,Ara,Arable and cropland % land area,2.75
+YEM,Yemen,For,Forest % land area,1.04
+YEM,Yemen,Mea,Meadows and pastures % land area,41.669
+YEM,Yemen,Oth,Other % land area,54.541
+ZAF,South Africa,Ara,Arable and cropland % land area,10.233
+ZAF,South Africa,For,Forest % land area,14.085
+ZAF,South Africa,Mea,Meadows and pastures % land area,69.185
+ZAF,South Africa,Oth,Other % land area,6.497
+ZMB,Zambia,Ara,Arable and cropland % land area,5.16
+ZMB,Zambia,For,Forest % land area,60.537
+ZMB,Zambia,Mea,Meadows and pastures % land area,26.904
+ZMB,Zambia,Oth,Other % land area,7.4
+ZWE,Zimbabwe,Ara,Arable and cropland % land area,10.598
+ZWE,Zimbabwe,For,Forest % land area,45.213
+ZWE,Zimbabwe,Mea,Meadows and pastures % land area,31.278
+ZWE,Zimbabwe,Oth,Other % land area,12.91

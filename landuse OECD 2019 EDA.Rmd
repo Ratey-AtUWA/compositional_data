@@ -1,0 +1,571 @@
+---
+title: "testing multivariate analyses on landuse data"
+output: 
+  pdf_document: 
+    fig_width: 5
+    fig_height: 5
+---
+
+# load packages
+
+```{r load packages etc., include=FALSE}
+library(stringr)
+library(RcmdrMisc)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(DataExplorer)
+library(MASS)
+
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+```
+
+# load data
+
+**Data are from**: https://stats.oecd.org/Index.aspx?DataSetCode=LAND_USE#
+
+```{r eval=FALSE, include=FALSE}
+# landuse_raw <- read.csv(file="landuse_OECD_2019.csv")
+# landuse_raw$COU <- as.factor(landuse_raw$COU)
+# landuse_raw$VAR <- as.factor(landuse_raw$VAR)
+# str(landuse_raw)
+```
+
+# reformat data
+
+this chunk: (i) makes each species a column (ii) replaces zeros with nominally low value to allow CLR transformation (iii) creates a version of data where percent land use areas are centered-log-ratio (CLR) transformed
+
+```{r reformat data, eval=FALSE, include=FALSE}
+# remove "eval=FALSE," to actually run this !
+
+# make each species a column
+# landuse <- data.frame(Country = levels(landuse_raw$COU), CountName = rep(NA,nlevels(landuse_raw$COU)))
+# row.names(landuse) <- as.character(landuse$Country)
+# UsesList <- levels(landuse_raw$VAR)
+
+# for (i in 1:length(UsesList)){
+#   vname <- UsesList[i]
+#   landuse[,vname] <- rep(0, NROW(landuse))
+#   rowz <- which(as.character(landuse_raw$VAR) == UsesList[i])
+#   set <- landuse_raw[rowz, c("COU","Country", "Landuse")]
+#   for (j in 1:NROW(set)){
+#     landuse[as.character(set[j,1]),vname] <- set[j,3]
+#     landuse[as.character(set[j,1]),"CountName"] <- set[j,2]
+#   }
+# }
+# rm(list = c("i","j","vname","set"))
+
+# for (i in 3:6){
+#   landuse[which(landuse[,i] == 0),i] <- rep(0.01, 
+#                                   length(which(landuse[,i] == 0)))
+# }
+# rm(i)
+landuse <- read.csv(file = "landuse2.csv")
+landuse$Region_coarse <- as.factor(landuse$Region_coarse)
+landuse$Region <- as.factor(landuse$Region)
+landuse$Climate <- as.factor(landuse$Climate)
+landuse$Koppen <- as.factor(landuse$Koppen)
+landuse$Koppen2 <- as.factor(landuse$Koppen2)
+```
+
+# make CLR-transformed dataset
+```{r centered-logratio data}
+require(rgr)
+landuse_clr <- landuse
+landuse_clr[,c("Ara","For","Mea","Oth")] <- 
+  clr(landuse_clr[,c("Ara","For","Mea","Oth")])
+names(landuse);names(landuse_clr)
+```
+
+# make logit-transformed dataset
+```{r logit data, paged.print=FALSE}
+require(car) # note rgr:: also had logit function!
+landuse_logit <- landuse
+landuse_logit[,c("Ara","For","Mea","Oth")] <- car::logit(landuse_logit[,c("Ara","For","Mea","Oth")]/100)
+# landuse_logit[,c("Ara","For","Mea","Oth")] <- car::logit(landuse_logit[,5:8])
+cat("\n")
+head(landuse); cat("\n")
+head(landuse_logit)
+```
+
+# correlation matrices
+```{r correlation matrix untransformed, fig.height=4, fig.width=3.3}
+require(DataExplorer)
+plot_correlation(landuse[,c("Ara","For","Mea","Oth")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# correlation matrices (CLR)
+```{r correlation matrix clr, fig.height=4, fig.width=3.3}
+require(DataExplorer)
+plot_correlation(landuse_clr[,c("Ara","For","Mea","Oth")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# correlation matrices (logit)
+```{r correlation matrix clr, fig.height=4, fig.width=3.3}
+require(DataExplorer)
+plot_correlation(landuse_logit[,c("Ara","For","Mea","Oth")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# principal components analysis
+
+```{r run and summarise PCA}
+data0 <- na.omit(landuse[,c("Ara","For","Mea","Oth")])
+pca_landuse_clos <- prcomp(data0, scale. = TRUE)
+pca_landuse_clos$rot
+cat("...\n\nComponent Variances\n")
+pca_landuse_clos$sdev^2
+cat("\n--------------------\n")
+
+data0 <- na.omit(landuse_clr[,c("Ara","For","Mea","Oth")])
+pca_landuse_open <- prcomp(data0, scale. = TRUE)
+pca_landuse_open$rot
+cat("...\n\nComponent Variances\n")
+pca_landuse_open$sdev^2
+cat("\n--------------------\n")
+rm(data0)
+```
+
+```{r visualise PCA, fig.height=10, fig.width=20}
+require(car)
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+par(mfrow=c(1,2), mar = c(3.5,3.5,3.5,3.5), oma = c(0,0,0,0), 
+    mgp=c(1.7,0.3,0), tcl = 0.25, font.lab=2,
+    lend = "square", ljoin = "mitre")
+# choose components and set scaling factor (sf)
+v1 <- 1
+v2 <- 2
+sf <- 0.8
+
+biplot(pca_landuse_clos, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.4, arrow.len = 0.08,
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("Untransformed data\n(compositionally closed)",
+      side = 3, line = -2, font = 2, adj = 0.98)
+text(pca_landuse_clos$x[,v1]*sf, pca_landuse_open$x[,v2]*sf, labels=landuse$Koppen2, 
+     col=rainbow(5,v=0.7)[landuse$Koppen2], cex = 0.8)
+
+sf <- 0.8
+biplot(pca_landuse_open, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.5, arrow.len = 0.08, 
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+text(pca_landuse_open$x[,v1]*sf, pca_landuse_open$x[,v2]*sf, labels=landuse_clr$Koppen2, 
+     col=rainbow(5,v=0.7)[landuse_clr$Koppen2], cex = 0.8)
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("CLR\ntransformed\ndata\n(no closure)",
+      side = 3, line = -4, font = 2, adj = 0.02)
+rm(list = c("v1","v2","sf"))
+```
+
+# K-means clustering
+
+```{r assess optimum clusters for closed data, fig.height=3, fig.width=4}
+require(factoextra)
+# data0 <- na.omit(landuse[,c("Ara","For","Mea","Oth")])
+fviz_nbclust(scale(landuse[,c("Ara","For","Mea","Oth")]), kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+```{r assess optimum clusters for CLR data, fig.height=3, fig.width=4}
+require(factoextra)
+# data0 <- na.omit(landuse_clr[,c("Ara","For","Mea","Oth")])
+fviz_nbclust(scale(landuse_clr[,c("Ara","For","Mea","Oth")]), kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+# compute K-means closed
+
+```{r compute K-means closed}
+# data0 <- na.omit(landuse[,c("Ara","For","Mea","Oth")])
+set.seed(123)
+landuse_clos_kmeans <- kmeans(scale(landuse[,c("Ara","For","Mea","Oth")]), 5, nstart = 25)
+cat("K-means clustering with",length(landuse_clos_kmeans$size),"clusters of sizes",landuse_clos_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(landuse_clos_kmeans)
+kc_rslt <- as.data.frame(cbind(as.character(landuse$Koppen2), landuse_clos_kmeans$cluster))
+colnames(kc_rslt) <- c("Koppen","Cluster")
+output <- vector(mode = "list", length = max(kc_rslt$Cluster))
+for(i in 1:max(kc_rslt$Cluster)) {
+  output[[i]] <- subset(kc_rslt, subset = kc_rslt$Cluster == i)
+  cat("\n======== Cluster",i,"========\n")
+  print(table(as.factor(output[[i]]$Koppen)))
+}
+rm(list=c("kc_rslt","output"))
+```
+
+# plot kmeans clusters closed
+
+```{r visualize kmeans clusters closed, fig.height=9, fig.width=9, message=FALSE, warning=FALSE}
+data0 <- na.omit(landuse[,c("Koppen2","Ara","For","Mea","Oth")])
+data0[,c("Ara","For","Mea","Oth")] <- scale(data0[,c("Ara","For","Mea","Oth")])
+row.names(data0) <- paste0(data0$Koppen2, seq(1, nrow(data0)))
+fviz_cluster(landuse_clos_kmeans, data = data0[,c("Ara","For","Mea","Oth")],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07","purple2","grey60"),
+             labelsize=9,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# compute K-means open
+
+```{r kmeans open}
+data0 <- scale(na.omit(landuse_clr[,c("Ara","For","Mea","Oth")]))
+# row.names(data0) <- landuse_clr$CountName
+set.seed(42)
+landuse_open_kmeans <- kmeans(data0[,c("Ara","For","Mea","Oth")], 5, nstart = 25)
+cat("K-means clustering with",length(landuse_open_kmeans$size),"clusters of sizes",landuse_open_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(landuse_open_kmeans)
+kc_rslt <- as.data.frame(cbind(as.character(landuse_clr$Koppen2), landuse_open_kmeans$cluster))
+colnames(kc_rslt) <- c("Koppen","Cluster")
+output <- vector(mode = "list", length = max(kc_rslt$Cluster))
+for(i in 1:max(kc_rslt$Cluster)) {
+  output[[i]] <- subset(kc_rslt, subset = kc_rslt$Cluster == i)
+  cat("\n======== Cluster",i,"========\n")
+  print(table(as.factor(output[[i]]$Koppen)))
+}
+rm(list=c("kc_rslt","output"))
+```
+
+# plot kmeans clusters open
+
+```{r visualize kmeans clusters open, fig.height=10, fig.width=9, message=FALSE, warning=FALSE}
+row.names(data0) <- paste0(landuse$Koppen2, seq(1,nrow(data0)))
+fviz_cluster(landuse_open_kmeans, data = data0[,c("Ara","For","Mea","Oth")],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07","purple2","grey60"),
+             labelsize=9,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# compute K-means logit
+
+```{r kmeans logit}
+data0 <- scale(na.omit(landuse_logit[,c("Ara","For","Mea","Oth")]))
+row.names(data0) <- paste0(landuse_logit$Koppen,seq(1,nrow(data0)))
+set.seed(42)
+landuse_logit_kmeans <- kmeans(data0[,c("Ara","For","Mea","Oth")], 5, nstart = 25)
+cat("K-means clustering with",length(landuse_logit_kmeans$size),"clusters of sizes",landuse_logit_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(landuse_logit_kmeans)
+kc_rslt <- as.data.frame(cbind(as.character(landuse$Koppen), landuse_logit_kmeans$cluster))
+colnames(kc_rslt) <- c("Koppen","Cluster")
+output <- vector(mode = "list", length = max(kc_rslt$Cluster))
+for(i in 1:max(kc_rslt$Cluster)) {
+  output[[i]] <- subset(kc_rslt, subset = kc_rslt$Cluster == i)
+  cat("\n======== Cluster",i,"========\n")
+  print(table(as.factor(output[[i]]$Koppen)))
+}
+rm(list=c("kc_rslt","output"))
+```
+
+# plot kmeans clusters logit
+
+```{r visualize kmeans clusters logit, fig.height=8, fig.width=9.5, message=FALSE, warning=FALSE}
+row.names(data0) <- paste0(landuse_logit$Koppen,seq(1,nrow(data0)))
+fviz_cluster(landuse_open_kmeans, data = data0[,c("Ara","For","Mea","Oth")],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07","purple2","grey60"),
+             labelsize=9,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# hierarchical clustering
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix closed, message=FALSE, warning=FALSE}
+dataHC <- na.omit(landuse[,c("Koppen2","Ara","For","Mea","Oth")])
+row.names(dataHC) <- paste0(as.character(dataHC$Koppen2),seq(1,nrow(dataHC)))
+dataHC$Koppen2 <- NULL
+landuse_clos_diss <- get_dist(dataHC, method = "euclidean")
+as.matrix(landuse_clos_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering closed, fig.height=4.5, fig.width=15, message=FALSE, warning=FALSE}
+landuse_clos_hc <- hclust(landuse_clos_diss, method = "average")
+require(factoextra)
+fviz_dend(landuse_clos_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree closed, results="hold"}
+landuse_clos_coph <- cophenetic(landuse_clos_hc)
+cat("Correlation r =",cor(landuse_clos_diss,landuse_clos_coph), "when hclust method is",landuse_clos_hc$method)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram closed, paged.print=FALSE}
+landuse_clos_grp <- cutree(landuse_clos_hc, k = 5)
+results <- data.frame(Country = names(landuse_clos_grp),
+                      Cluster = as.numeric(landuse_clos_grp))
+results <- results[order(results$Cluster, results$Country),] 
+output <- vector(mode = "list", length = max(results$Cluster))
+for(i in 1:max(results$Cluster)) {
+  output[[i]] <- subset(results, subset = results$Cluster==i)
+  cat("\nCluster",i,"\n")
+  print(output[[i]]$Country)
+}
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram closed, fig.height=4.5, fig.width=12, message=FALSE, warning=FALSE}
+fviz_dend(landuse_clos_hc, k = 5, # Cut in five groups
+          cex = 0.5, # label size
+          k_colors = c("red3", "blue2", "purple","sienna","grey40"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+```
+
+# hierarchical clustering (CLR-open data)
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix open, message=FALSE, warning=FALSE}
+dataHC <- na.omit(landuse_clr[,c("Koppen2","Ara","For","Mea","Oth")])
+row.names(dataHC) <- paste0(as.character(dataHC$Koppen2),seq(1,nrow(dataHC)))
+dataHC$Koppen2 <- NULL
+landuse_open_diss <- get_dist(dataHC, method = "euclidean")
+as.matrix(landuse_open_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering open, fig.height=4.5, fig.width=12, message=FALSE, warning=FALSE}
+landuse_open_hc <- hclust(landuse_open_diss, method = "average")
+require(factoextra)
+fviz_dend(landuse_open_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree open}
+landuse_open_coph <- cophenetic(landuse_open_hc)
+cat("Correlation r =",cor(landuse_open_diss,landuse_open_coph), "when hclust method is",landuse_open_hc$method)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram open}
+landuse_open_grp <- cutree(landuse_open_hc, k = 5)
+results <- data.frame(Country = names(landuse_open_grp),
+                      Cluster = as.numeric(landuse_open_grp))
+results <- results[order(results$Cluster, results$Country),] 
+output <- vector(mode = "list", length = max(results$Cluster))
+for(i in 1:max(results$Cluster)) {
+  output[[i]] <- subset(results, subset = results$Cluster==i)
+  cat("\nCluster",i,"\n")
+  print(output[[i]]$Country)
+}
+table(landuse_open_grp)
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram open, fig.height=4.5, fig.width=12, message=FALSE, warning=FALSE}
+fviz_dend(landuse_open_hc, k = 5, # Cut into 5 groups
+          cex = 0.5, # label size
+          k_colors = c("black","red3", "blue2", "purple","darkcyan"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+)
+```
+
+# LDA linear discriminant analysis
+
+```{r LDA closed cities data}
+data0 <- landuse
+data0[,c("Ara","For","Mea","Oth")] <- scale(data0[,c("Ara","For","Mea","Oth")])
+lda_landuse_clos <- lda(formula = Koppen2 ~ Ara + For + Mea + Oth, 
+                    data=data0,
+                    prior=as.numeric(summary(landuse$Koppen2))/
+                      nrow(landuse)) 
+print(lda_landuse_clos)
+```
+
+```{r LDA open cities data}
+data0 <- landuse_clr
+data0[,c("Ara","For","Mea","Oth")] <- scale(data0[,c("Ara","For","Mea","Oth")])
+lda_landuse_open <- lda(formula = Koppen2 ~ Ara + For + Mea + Oth, 
+                    data=data0,
+                    prior=as.numeric(summary(landuse$Koppen2))/
+                      nrow(landuse)) 
+print(lda_landuse_open)
+```
+
+```{r plot LDA closed, fig.height=5, fig.width=10}
+par(mfrow = c(1,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_landuse_clos$scaling[,1], lda_landuse_clos$scaling[,2], 
+     xlim = c(-0.5,12), ylim=c(-14,0.5),
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", main="(a) Variable Coefficients")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(lda_landuse_clos$scaling[,1],lda_landuse_clos$scaling[,2],
+     labels=c("Compact", "Open", "Lightweight","Industry"),
+     pos=1,cex=0.95,col="blue2",offset=0.2)
+
+ldaPred_landuse_clos <- predict(lda_landuse_clos)
+for(i in 1:NROW(lda_landuse_clos$scaling)){
+  arrows(0,0,lda_landuse_clos$scaling[i,1],lda_landuse_clos$scaling[i,2],
+         length = 0.15, col = 8)
+}
+plot(ldaPred_landuse_clos$x[,1], ldaPred_landuse_clos$x[,2], 
+     col=c(2,"#00666680",8,"#99660080","darkred","tomato")[landuse$Koppen2], 
+     pch=c(0,15,1,19,2,3)[landuse$Koppen2], 
+     ylim = c(-3,3),
+  lwd=c(2,1,2,1,2,2)[landuse$Koppen2],
+  cex=c(1.8,1.8,2,2,2)[landuse$Koppen2], 
+  xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+  main="(b) Predictions for Observations")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(ldaPred_landuse_clos$x[,1], ldaPred_landuse_clos$x[,2], 
+     labels=landuse$Koppen2, col=c(2,"blue4","#991100","#663300",8)[landuse$Koppen2],
+     pos=1, offset=0.15, cex=0.65)
+legend("bottomleft",legend=levels(landuse$Koppen2),
+       col=c(2,"#00666680",8,"#99660080","darkred","tomato"),
+       pch=c(0,15,1,19,2,3), pt.lwd=c(2,1,2,1,2,2),
+       title="City Koppen",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, 
+       pt.cex=c(1.8,1.8,2,2,2), cex=0.85)
+
+```
+
+```{r compare models with reality, paged.print=FALSE}
+ldaPred_landuse_clos <- predict(lda_landuse_clos)
+closComp <- as.data.frame(cbind(as.character(landuse$Koppen2), 
+                                as.character(ldaPred_landuse_clos$class)))
+colnames(closComp) <- c("=-Actual-=","=-Predicted-=")
+closComp$test <- as.character(landuse$Koppen2) == as.character(ldaPred_landuse_clos$class)
+k = length(which(closComp$test == TRUE))
+cat("Predictions by LDA using closed data:",k,"out of",NROW(landuse_clr),"=",paste0(signif(100*k/NROW(landuse),4),"% correct\n"))
+closComp
+
+ldaPred_landuse_open <- predict(lda_landuse_open)
+openComp <- as.data.frame(cbind(as.character(landuse_clr$Koppen2), as.character(ldaPred_landuse_open$class)))
+colnames(openComp) <- c("=-Actual-=","=-Predicted-=")
+openComp$test <- as.character(landuse_clr$Koppen2) == as.character(ldaPred_landuse_open$class)
+k = length(which(openComp$test == TRUE))
+cat("\nPredictions by LDA using open data:",k,"out of",NROW(landuse_clr),"=",paste0(signif(100*k/NROW(landuse_clr),4),"% correct\n"))
+openComp
+```
+
+```{r LDA train and predict closed, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(MASS)
+library(RcmdrMisc)
+library(knitr)
+library(beepr)
+### MATCH this to read file below
+# sink(file="landuse_type_pred.csv", type="output")
+n0 <- 100 # number of iterations
+ftrain <- 0.75 # proportion of observations in training set
+results <- data.frame(
+    Rep = rep(NA, n0),
+    matches = rep(NA, n0),
+    non_matches = rep(NA, n0),
+    success = rep(NA, n0))
+# train <- sample(1:NROW(landuse), round(NROW(landuse)-5,0))
+train <- sample(1:NROW(landuse), round(NROW(landuse) * ftrain,0))
+lda.landuse.train <- lda(formula = Koppen2 ~  Ara + For + Mea + Oth, 
+                    data = landuse[train,],
+                    prior = as.numeric(summary(landuse$Koppen2[train]))/
+                      nrow(landuse[train,])) 
+lda.landuse.pred <- predict(lda.landuse.train, landuse[-train,])
+# make vector of individual category non-matches
+matchByClass <- data.frame(Matches = rep(0,nlevels(landuse$Koppen2))) 
+rownames(matchByClass) <- levels(lda.landuse.pred$class)
+e0 <- 0
+# colnames(matchByClass) <- c("Matches")
+for (i in 1:n0) {
+  # train <- sample(1:NROW(landuse), round(NROW(landuse)-5,0))
+  train <- sample(1:NROW(landuse), round(NROW(landuse) * ftrain,0))
+  if (is.na(match(NA,tapply(landuse[train,]$Ara, landuse[train,]$Koppen2, sd, na.rm=T))) == TRUE) {
+    lda.landuse.train <- lda(formula = Koppen2 ~ Ara + For + Mea + Oth, 
+                          data = landuse[train,],
+                          prior=as.numeric(summary(landuse$Koppen2[train]))/
+                        nrow(landuse[train,])) 
+    lda.landuse.pred <- predict(lda.landuse.train, landuse[-train,])
+    e0 <- e0 + 1
+  }
+
+  k=0 # number of non-matches
+  m0 <- as.matrix(rep(0,5)) # vector of individual category non-matches
+  rownames(m0) <- levels(lda.landuse.pred$class)
+  rownames(matchByClass) <- levels(lda.landuse.pred$class)
+  colnames(matchByClass) <- c("Matches")
+  for (jM in 1:NROW(landuse[-train,])) {
+    # cat("medium loop #",jM,"\n")
+    for (jS in 1:nlevels(lda.landuse.pred$class)) {
+      if((lda.landuse.pred$class[jM] == levels(lda.landuse.pred$class)[jS]) & 
+         (landuse$Koppen2[-train][jM] == levels(lda.landuse.pred$class)[jS]) ) 
+        m0[jS] = m0[jS] + 1
+      else  m0[jS] = m0[jS] 
+      # cat("small loop iteration #",jS,"; matching",
+      #     levels(lda.landuse.pred$class)[jS],
+      #     "; matches =",m0,"\n")
+    }
+    k = sum(m0)
+    # cat("medium loop iteration ",jM,"; matches = ",k,"\n", sep="")
+    # if(jM==NROW(landuse[-train,])) 
+  }
+  # cat("GIANT LOOP #",i,"\n")
+  matchByClass <- matchByClass + m0
+  # output to results data frame: iteration, matches, non-matches, proportion matched
+  results[i,] <- c(i, k, NROW(landuse[-train,])-k, signif(k/NROW(landuse[-train,]),3))
+  # cbind(lda.landuse.pred$class,landuse$Koppen2[-train])
+}
+matchByClass$Actual <- round(1000*as.numeric(summary(landuse$Koppen2))*
+                               (NROW(landuse[-train,])/NROW(landuse)),0)
+matchByClass$Proportion <- matchByClass$Matches/matchByClass$Actual
+
+# sink() # close output file
+### make sure read file is SAME AS SINK
+beep(sound = 10)
+
+# results <- read.csv("landuse_type_pred.csv")
+{cat("[Based on", n0, "random subsets of dataset to",
+    "train LDA model to\npredict remaining observations]\n")
+cat("Number of obs. in random subsets =",NROW(train),
+    " (predicting",NROW(landuse)-NROW(train),"samples)\n")
+print(numSummary(results[,2:4], statistics=c("mean","sd"))$table)
+ns0 <- numSummary(results$success)
+t0 <- t.test(results$success)
+cat(rep("-\u2013-",24),
+    "\nStat. summary for 'success':\nMean = ",round(ns0$table[1],4),
+    ", sd = ",round(ns0$table[2],4),", 95% confidence interval = (",
+    signif(t0$conf.int[1],3),", ",signif(t0$conf.int[2],4),") (after ",i," reps)\n", sep="")
+cat(n0-e0,"iterations failed due to random sampling missing a group\n\n")
+print(matchByClass, digits=3)}
+rm(list = c("n0","ftrain","i","e0","jS","jM","k","m0","matchByClass","results","train"))
+```
+

@@ -1,0 +1,341 @@
+---
+title: "testing multivariate analyses on SLCVR data"
+subtitle: "SLCVR refers to Smith's Lake and Charles Veryard Reserves, Perth, Western Australia"
+documentclass: article
+classoption: a4paper
+geometry: margin=0.787in
+output: 
+  pdf_document: 
+  highlight: espresso
+  fig_height: "50%"
+  fig_width: "50%"
+  fig_caption: TRUE
+  number_sections: TRUE
+  toc: TRUE
+---
+
+# load packages
+
+```{r load packages etc., include=FALSE}
+library(stringr)
+library(RcmdrMisc)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(DataExplorer)
+
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+```
+
+# load data
+
+**Data are from**: Rate, A.W., 2021. Smith's Lake and Charles Veryard Reserves 2017 multielement soil, sediment, street dust, *PANGAEA*, doi:10.1594/PANGAEA.935591 https://doi.org/10.1594/PANGAEA.935591.
+
+```{r}
+slcvr <- read.csv("SLCVR_2021.csv", stringsAsFactors = TRUE)
+# str(slcvr)
+slcvr$Code <- as.character(slcvr$Code)
+slcvr$Sample.ID <- as.character(slcvr$Sample.ID)
+slcvr$Group <- as.factor(slcvr$Group)
+```
+
+# make CLR-transformed dataset
+```{r}
+slcvr_clr <- slcvr
+temp <- clr(slcvr_clr[,c("pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                                      "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+rowsNA <- as.numeric(attributes(temp)$na.action)
+slcvr_clr <- cbind(slcvr[-rowsNA,1:13], temp)
+numSummary(slcvr_clr[,c("pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                                      "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+names(slcvr);names(slcvr_clr)
+```
+
+# correlation matrices
+```{r fig.height=7, fig.width=7}
+require(DataExplorer)
+plot_correlation(slcvr[,c("pH","EC","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                          "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# correlation matrices (CLR)
+```{r correlation matrix clr, fig.height=7, fig.width=7}
+require(DataExplorer)
+plot_correlation(slcvr_clr[,c("pH","EC","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# principal components analysis
+
+```{r run and summarise PCA}
+data0 <- na.omit(slcvr[,c("pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+pca_slcvr_clos <- prcomp(data0, scale. = TRUE)
+pca_slcvr_clos$rot[,1:6]
+cat("...\n\nComponent Variances\n")
+pca_slcvr_clos$sdev[1:10]^2
+cat("\n--------------------\n")
+
+data0 <- na.omit(slcvr_clr[,c("pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+pca_slcvr_open <- prcomp(data0, scale. = TRUE)
+pca_slcvr_open$rot[,1:6]
+cat("...\n\nComponent Variances\n")
+pca_slcvr_open$sdev[1:10]^2
+cat("\n--------------------\n")
+rm(data0)
+```
+
+```{r visualise PCA, fig.height=6, fig.width=12}
+require(car)
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+par(mfrow=c(1,2), mar = c(3.5,3.5,3.5,3.5), oma = c(0,0,0,0), 
+    mgp=c(1.7,0.3,0), tcl = 0.25, font.lab=2,
+    lend = "square", ljoin = "mitre")
+# choose components and set scaling factor (sf)
+v1 <- 1
+v2 <- 2
+sf <- 0.12
+
+biplot(pca_slcvr_clos, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.4, arrow.len = 0.08,
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("Untransformed data\n(compositionally closed)",
+      side = 3, line = -2, font = 2, adj = 0.98)
+data0 <- na.omit(slcvr[,c("Type","pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+points(pca_slcvr_clos$x[,v1]*sf, pca_slcvr_clos$x[,v2]*sf*1.5,
+       pch = c(22,21,24)[data0$Type],
+       bg = c(2,3,4)[data0$Type],
+       col = c(2,3,4)[data0$Type],
+       cex = c(1.2,1.4,1.2)[data0$Type])
+dataEllipse(x=pca_slcvr_clos$x[,v1]*sf, y=pca_slcvr_clos$x[,v2]*sf*1.5,
+            groups = data0$Type, add = TRUE,
+            plot.points = FALSE, levels = c(0.9),
+            center.pch = 3, col = c(2,3,4,5,6,7),
+            lty = 2, lwd = 1, center.cex = 2.4)
+symbols(0,0, circles = 0.5, fg = "grey",
+        add = TRUE, inches = FALSE)
+legend("bottomleft", bty = "o", inset = 0.03,
+       title = "Type",
+       box.col = "gray", box.lwd = 2, bg = 10,
+       legend = levels(data0$Type),
+       pch = c(22,21,24),
+       col = c(2,3,4), pt.bg = c(2,3,4),
+       pt.cex = c(1.2, 1.4, 1.2),
+       cex = 1.1, y.intersp = 0.9)
+
+# v1 <- 1
+# v2 <- 3
+sf <- 0.15
+
+biplot(pca_slcvr_open, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.5, arrow.len = 0.08,
+xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("CLR transformed data\n(no closure)",
+      side = 3, line = -2, font = 2, adj = 0.02)
+data0 <- na.omit(slcvr_clr[,c("Type","pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+points(pca_slcvr_open$x[,v1]*sf, pca_slcvr_open$x[,v2]*sf*1.5,
+       pch = c(22,21,24)[data0$Type],
+       bg = c(2,3,4)[data0$Type],
+       col = c(2,3,4)[data0$Type],
+       cex = c(1.2,1.4,1.2)[data0$Type])
+dataEllipse(x=pca_slcvr_open$x[,v1]*sf, y=pca_slcvr_open$x[,v2]*sf*1.5,
+            groups = data0$Type, add = TRUE,
+            plot.points = FALSE, levels = c(0.9),
+            center.pch = 3, col = c(2,3,4,5,6,7),
+            lty = 2, lwd = 1, center.cex = 2.4)
+symbols(0,0, circles = 0.5, fg = "grey",
+        add = TRUE, inches = FALSE)
+legend("bottomleft", bty = "o", inset = 0.03,
+       title = "Type",
+       box.col = "gray", box.lwd = 2, bg = 10,
+       legend = levels(data0$Type),
+       pch = c(22,21,24),
+       col = c(2,3,4), pt.bg = c(2,3,4),
+       pt.cex = c(1.2, 1.4, 1.2),
+       cex = 1.1, y.intersp = 0.9)
+rm(list = c("v1","v2","sf","data0"))
+```
+
+
+# K-means clustering
+
+```{r assess optimum clusters for closed data, fig.height=3.5, fig.width=5}
+require(factoextra)
+data0 <- na.omit(slcvr[,c("pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+fviz_nbclust(data0, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+```{r assess optimum clusters for CLR data, fig.height=3.5, fig.width=5}
+require(factoextra)
+data0 <- na.omit(slcvr_clr[,c("pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+fviz_nbclust(data0, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+# compute K-means closed
+
+```{r}
+data0 <- na.omit(slcvr[,c("Type","pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+set.seed(123)
+slcvr_clos_kmeans <- kmeans(data0[,2:NCOL(data0)], 3, nstart = 25)
+cat("K-means clustering with",length(slcvr_clos_kmeans$size),"clusters of sizes",slcvr_clos_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(slcvr_clos_kmeans)
+```
+
+# plot kmeans clusters closed
+
+```{r visualize kmeans clusters, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+row.names(data0) <- paste0(data0$Type,seq(1,NROW(data0)))
+fviz_cluster(slcvr_clos_kmeans, data = data0[,2:NCOL(data0)],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             labelsize=10,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# compute K-means open
+
+```{r}
+data0 <- na.omit(slcvr_clr[,c("Type","pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+set.seed(123)
+slcvr_open_kmeans <- kmeans(data0[,2:NCOL(data0)], 3, nstart = 25)
+cat("K-means clustering with",length(slcvr_open_kmeans$size),"clusters of sizes",slcvr_open_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(slcvr_open_kmeans)
+```
+
+# plot kmeans clusters open
+
+```{r visualize kmeans clusters, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+row.names(data0) <- paste0(data0$Type,seq(1,NROW(data0)))
+fviz_cluster(slcvr_open_kmeans, data = data0[,2:NCOL(data0)],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             labelsize=10,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# hierarchical clustering
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix closed}
+dataHC <- na.omit(slcvr[,c("Type","pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                              "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+row.names(dataHC) <- paste0(dataHC$Type, seq(1,NROW(dataHC)))
+dataHC$Type <- NULL
+slcvr_clos_diss <- get_dist(dataHC, method = "euclidean")
+as.matrix(slcvr_clos_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering closed, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+slcvr_clos_hc <- hclust(slcvr_clos_diss, method = "ward.D2")
+require(factoextra)
+fviz_dend(slcvr_clos_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree closed}
+slcvr_clos_coph <- cophenetic(slcvr_clos_hc)
+cor(slcvr_clos_diss,slcvr_clos_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram closed}
+slcvr_clos_grp <- cutree(slcvr_clos_hc, k = 3)
+slcvr_clos_grp ; cat("\n")
+table(slcvr_clos_grp)
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram closed, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+fviz_dend(slcvr_clos_hc, k = 3, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = c("red3", "blue2", "purple"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+```
+
+# hierarchical clustering (CLR-open data)
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix open}
+dataHC <- na.omit(slcvr_clr[,c("Type","pH","Al","As","Ba","Ca","Ce","Cr","Cu","Fe","Gd","K","La",
+                           "Mg","Mn","Mo","Na","Ni","P","Pb","S","Sr","V","Y","Zn")])
+row.names(dataHC) <- paste0(dataHC$Type, seq(1,NROW(dataHC)))
+dataHC$Type <- NULL
+slcvr_open_diss <- get_dist(dataHC, method = "euclidean")
+as.matrix(slcvr_open_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering open, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+slcvr_open_hc <- hclust(slcvr_open_diss, method = "ward.D2")
+require(factoextra)
+fviz_dend(slcvr_open_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree open}
+slcvr_open_coph <- cophenetic(slcvr_open_hc)
+cor(slcvr_open_diss,slcvr_open_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram open}
+slcvr_open_grp <- cutree(slcvr_open_hc, k = 3)
+slcvr_open_grp ; cat("\n")
+table(slcvr_open_grp)
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram open, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+fviz_dend(slcvr_open_hc, k = 3, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = c("red3", "blue2", "purple"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+)
+```
+

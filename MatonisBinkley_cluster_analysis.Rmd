@@ -1,0 +1,441 @@
+---
+title: "testing cluster analysis"
+output: 
+  pdf_document: 
+    fig_width: 5
+    fig_height: 5
+---
+
+**Reference**: Kassambara, Alboukadel (2017) *Practical Guide To Cluster Analysis in R* https://xsliulab.github.io/Workshop/week10/r-cluster-book.pdf
+
+# load packages
+
+```{r load packages etc., include=FALSE}
+library(stringr)
+library(RcmdrMisc)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(DataExplorer)
+
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+```
+
+# load data
+
+**Data are from**: Matonis, Megan; Binkley, Daniel (2018), “Data for: Not just about the trees: Key role of mosaic-meadows in restoration of ponderosa pine ecosystems”, *Mendeley Data*, V1, https://doi.org/10.17632/4yf6ck7hjx.1
+
+**based on this article**: Matonis, M.S., Binkley, D., 2018. Not just about the trees: Key role of mosaic-meadows in restoration of ponderosa pine ecosystems. *Forest Ecology and Management*, **411**: 120-131, https://doi.org/10.1016/j.foreco.2018.01.019
+
+**Sites are** Heil Valley Ranch (HL), Long John (LJ), Messenger Gulch (MG), Phantom Creek (PC), Manitou Experimental Forest (ME), UncMesas (UM).
+
+```{r load data, eval=FALSE, include=FALSE}
+# remove "eval=FALSE," to actually run this !
+meadow <- read.csv(file="MatonisBinkley_meadow.csv")
+meadow$QuadratID <- as.factor(meadow$QuadratID)
+meadow$Life.form <- as.factor(meadow$Life.form)
+names(meadow)[4] <- "Cover_pct"
+with(meadow, table(QuadratID))
+meadow$meadow <- as.factor(str_sub(meadow$QuadratID,4,5))
+meadow$rep <- as.factor(str_trunc(as.character(meadow$QuadratID),
+                                  2,side="left",ellipsis = ""))
+
+meadow$SiteID <- as.factor(str_trunc(as.character(meadow$QuadratID),
+                                     2, side="right", ellipsis = ""))
+str(meadow)
+```
+
+# reformat data
+
+this chunk: (i) makes each species a column (ii) replaces zeros with nominally low value to allow CLR transformation (iii) creates a version of data where percent species abundances are centered-log-ratio (CLR) transformed
+
+```{r reformat data, eval=FALSE, include=FALSE}
+# remove "eval=FALSE," to actually run this !
+
+# make each species a column
+matonis <- data.frame(SiteMeadQuad = levels(meadow$QuadratID))
+row.names(matonis) <- as.character(matonis$SiteMeadQuad)
+meadow$SpeciesFac <- as.factor(meadow$Species)
+speclist <- levels(meadow$SpeciesFac)
+
+for (i in 1:length(speclist)){
+  vname <- str_replace_all(speclist[i], " ", "_")
+  matonis[,vname] <- rep(0, NROW(matonis))
+  rowz <- which(as.character(meadow$Species) == speclist[i])
+  set <- meadow[rowz, c("QuadratID", "Cover_pct")]
+  for (j in 1:NROW(set)){
+    matonis[as.character(set[j,1]),vname] <- set[j,2]
+  }
+}
+rm(list = c("i","j","vname","set"))
+# calc bare soil by difference and replace zeros
+matonis$Nothing <- NULL
+matonis$Bare_soil <- 100-rowSums(matonis[,2:150])
+negz <- which(matonis$Bare_soil < 0)
+matonis$Bare_soil[negz] <- rep(0.01, length(negz)); rm(negz)
+matonis$SumSpp <- rowSums(matonis[,2:151])
+
+for (i in 2:151){
+  matonis[which(matonis[,i] == 0),i] <- rep(0.001, 
+                                  length(which(matonis[,i] == 0)))
+}
+
+matonis$site <- as.factor(str_trunc(matonis$SiteMeadQuad, 2, 
+                                    side="right", ellipsis = ""))
+matonis$meadow <- as.factor(str_sub(matonis$SiteMeadQuad, 4, 5))
+matonis$rep <- as.factor(str_trunc(matonis$SiteMeadQuad, 2, 
+                                   side="left", ellipsis = ""))
+# CLR-transform percent cover
+matonCLR <- matonis
+matonCLR[,2:150] <- clr(matonCLR[,2:150])
+```
+
+# principal components analysis
+```{r}
+
+```
+
+```{r run and summarise PCA}
+pca_closed <- prcomp(matonis[,2:151], scale. = TRUE)
+pca_closed$rot[1:20,1:5]
+cat("...\n\nComponent Variances\n")
+pca_closed$sdev[1:10]^2
+cat("\n--------------------\n")
+
+pca_open <- prcomp(matonCLR[,2:151], scale. = TRUE)
+pca_open$rot[1:20,1:5]
+cat("...\n\nComponent Variances\n")
+pca_open$sdev[1:10]^2
+cat("\n--------------------\n")
+```
+
+```{r visualise PCA, fig.height=6, fig.width=12}
+require(car)
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+par(mfrow=c(1,2), mar = c(3.5,3.5,3.5,3.5), oma = c(0,0,0,0), 
+    mgp=c(1.7,0.3,0), tcl = 0.25, font.lab=2,
+    lend = "square", ljoin = "mitre")
+# choose components and set scaling factor (sf)
+v1 <- 1
+v2 <- 3
+sf <- .1
+# truncate species names to first 3 letters of Genus & species
+specnames <- names(matonis[,2:151])
+specshort <- paste0(str_trunc(specnames,3,"right",""),
+                    str_to_title(str_sub(specnames,
+                        str_locate(specnames,"_")[,1]+1,
+                        str_locate(specnames,"_")[,1]+3)))
+specshort[62] <- "Forb"
+specshort[150] <- "Soil"
+
+biplot(pca_closed, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.4, arrow.len = 0.08,
+       xlim = c(-1.5,1.5), ylim = c(-1.2,1.2), 
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"),
+       ylabs = specshort)
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("Untransformed data\n(compositionally closed)",
+      side = 3, line = -2, font = 2)
+# points(pca_closed$x[,v1]*sf, pca_closed$x[,v2]*sf*1.5,
+#        pch = c(22,21,24,1,0,2)[matonis$site],
+#        bg = c(2,3,4,5,6,7)[matonis$site],
+#        col = c(2,3,4,5,6,7)[matonis$site],
+#        cex = c(1.2,1.4,1.2,1.4,1.2,1.2)[matonis$site],
+#        lwd = c(1,1,1,2,2,2)[matonis$site])
+# dataEllipse(x=pca_closed$x[,v1]*sf, y=pca_closed$x[,v2]*sf*1.5, 
+#             groups = matonis$site, add = TRUE,
+#             plot.points = FALSE, levels = c(0.95),
+#             center.pch = 3, col = c(2,3,4,5,6,7), 
+#             lty = 2, lwd = 1, center.cex = 2.4)
+# symbols(0,0, circles = 0.5, fg = "grey", 
+#         add = TRUE, inches = FALSE)
+# legend("bottomright", bty = "o", inset = 0.03,
+#        title = "Site",
+#        box.col = "gray", box.lwd = 2, bg = 10,
+#        legend = levels(matonis$site),
+#        pch = c(22,21,24,1,0,2),
+#        col = c(2,3,4,5,6,7), pt.bg = c(2,3,4,5,6,7),
+#        pt.cex = c(1.2, 1.4, 1.2,1.4,1.2,1.2),
+#        pt.lwd = c(1,1,1,2,2,2),
+#        cex = 1.1, y.intersp = 0.9)
+
+# v1 <- 1
+# v2 <- 3
+# sf <- .1
+specnames <- names(matonCLR[,2:151])
+specshort <- paste0(str_trunc(specnames,3,"right",""),
+                    str_to_title(str_sub(specnames,
+                        str_locate(specnames,"_")[,1]+1,
+                        str_locate(specnames,"_")[,1]+3)))
+specshort[62] <- "Forb"
+specshort[150] <- "Soil"
+
+biplot(pca_open, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.5, arrow.len = 0.08,
+             xlim = c(-1.25,1.25), ylim = c(-0.75,1.75), 
+xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"),
+       ylabs = specshort)
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("Centred log ratio transformed data\n(no compositional closure)",
+      side = 3, line = -2, font = 2)
+# points(pca_open$x[,v1]*sf, pca_open$x[,v2]*sf*1.5,
+#        pch = c(22,21,24,1,0,2)[matonCLR$site],
+#        bg = c(2,3,4,5,6,7)[matonCLR$site],
+#        col = c(2,3,4,5,6,7)[matonCLR$site],
+#        cex = c(1.2,1.4,1.2,1.4,1.2,1.2)[matonCLR$site],
+#        lwd = c(1,1,1,2,2,2)[matonCLR$site])
+# dataEllipse(x=pca_open$x[,v1]*sf, y=pca_open$x[,v2]*sf*1.5, 
+#             groups = matonCLR$site, add = TRUE,
+#             plot.points = FALSE, levels = c(0.95),
+#             center.pch = 3, col = c(2,3,4,5,6,7), 
+#             lty = 2, lwd = 1, center.cex = 2.4)
+# symbols(0,0, circles = 0.5, fg = "grey", 
+#         add = TRUE, inches = FALSE)
+# legend("bottomright", bty = "o", inset = 0.03,
+#        title = "Site",
+#        box.col = "gray", box.lwd = 2, bg = 10,
+#        legend = levels(matonCLR$site),
+#        pch = c(22,21,24,1,0,2),
+#        col = c(2,3,4,5,6,7), pt.bg = c(2,3,4,5,6,7),
+#        pt.cex = c(1.2, 1.4, 1.2,1.4,1.2,1.2),
+#        pt.lwd = c(1,1,1,2,2,2),
+#        cex = 1.1, y.intersp = 0.9)
+
+```
+
+# CLUSTER ANALYSIS
+
+## hierarchical clustering
+
+```{r fig.height=10, fig.width=8, message=TRUE, warning=FALSE}
+clusClos <- droplevels(matonis[1:50,])
+row.names(clusClos) <- clusClos$SiteMeadQuad
+# make similarity matrix
+clusClos_sim <- dist(clusClos, method = "euclidean")
+# use similarity matrix to calculate clusters
+maton_clus_clos <- hclust(clusClos_sim, method = "ward.D")
+par(mfrow=c(3,1), mar = c(5,3.5,1,1), mgp = c(1.7,0.3,0), tcl = 0.25, font.lab = 2)
+plot(maton_clus_clos, ylab = "Euclidean Distance",
+     cex=0.75, col = c(1,2,3))
+maton_den_clos <- as.dendrogram(maton_clus_clos)
+plot(maton_den_clos, ylab = "Euclidean Distance")
+plot(cut(maton_den_clos, h=50)$lower[[2]], ylab = "Euclidean Distance", 
+     main="just cluster 2 at cutoff=50")
+par(mfrow=c(1,1), mar = c(3.5,3.5,1,1))
+```
+
+```{r fig.height=8, fig.width=9, message=FALSE, warning=FALSE}
+clusOpen <- droplevels(matonCLR[1:50,])
+row.names(clusOpen) <- clusOpen$SiteMeadQuad
+clusOpen_sim <- dist(clusOpen, method = "euclidean")
+maton_clus_open <- hclust(clusOpen_sim, method = "ward.D")
+# par(mfrow=c(1,1), mar = c(3.5,3.5,1,1))
+# plot(maton_clus_open, ylab = "Euclidean Distance",
+#      cex=0.5, col = c(1,2,3))
+maton_den_open <- as.dendrogram(maton_clus_open)
+par(mfrow=c(2,1), mar = c(5,3,1,1), mgp = c(1.7,0.3,0), tcl = 0.25, font.lab = 2)
+plot(maton_den_open, ylab = "Euclidean Distance", 
+     main="Complete Dendrogram", cex.main = 1)
+kut = 42
+abline(h=kut, col = "grey", lty = 2)
+plot(cut(maton_den_open, h=kut)$upper, ylab = "Euclidean Distance", 
+     main=paste0("Dendrogram above cutoff=",kut," (for instance)"), cex.main = 1)
+par(mfrow=c(1,1), mar = c(3.5,3.5,1,1)); rm(kut)
+```
+
+```{r fig.height=8, fig.width=12}
+# compare closed and open ####
+par(mfrow=c(2,1), mar = c(4.5,3.5,1,1))
+plot(maton_den_clos, ylab = "Euclidean Distance")
+mtext("Closed data", side = 3, line = -1.5, adj = 0.95, font=2, col = 2)
+plot(maton_den_open, ylab = "Euclidean Distance")
+mtext("Open (CLR) data", side = 3, line = -1.5, adj = 0.95, font=2, col = 5)
+par(mfrow=c(1,1))
+```
+
+# K-means clustering
+
+using Heil Valley Ranch "HL" subset of data from Matonis, Megan; Binkley, Daniel (2018), “Data for: Not just about the trees: Key role of mosaic-meadows in restoration of ponderosa pine ecosystems”, *Mendeley Data*, V1, https://doi.org/10.17632/4yf6ck7hjx.1
+
+```{r read and prepare data, include=FALSE}
+MatonHL_clos <- read.csv(file="clusClos.csv", stringsAsFactors = TRUE)
+row.names(MatonHL_clos) <- MatonHL_clos$MeadQuad
+MatonHL_clos[,2:49] <- scale(MatonHL_clos[,2:49])
+
+# use CLR transform to open data...
+require(rgr)
+MatonHL_open <- read.csv(file="clusClos.csv", stringsAsFactors = TRUE)
+row.names(MatonHL_open) <- MatonHL_open$MeadQuad
+MatonHL_open[,2:49] <- clr(MatonHL_open[,2:49])
+# ...and scale the transformed variables
+MatonHL_open[,2:49] <- scale(MatonHL_open[,2:49])
+```
+
+```{r assess optimum clusters for closed data}
+require(factoextra)
+fviz_nbclust(MatonHL_clos[,2:49], kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+```{r assess optimum clusters for open (CLR) data}
+require(factoextra)
+fviz_nbclust(MatonHL_open[,2:49], kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+# compute K-means
+
+```{r}
+set.seed(123)
+MatonHL_clos_kmeans <- kmeans(MatonHL_clos[,2:49], 4, nstart = 25)
+cat("K-means clustering with",length(MatonHL_clos_kmeans$size),"clusters of sizes",MatonHL_clos_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(MatonHL_clos_kmeans)
+```
+
+# plot kmeans clusters
+
+```{r visualize kmeans clusters, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+fviz_cluster(MatonHL_clos_kmeans, data = MatonHL_clos[,2:49],
+             palette = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+             labelsize=10,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+```{r}
+set.seed(123)
+MatonHL_open_kmeans <- kmeans(MatonHL_open[,2:49], 4, nstart = 25)
+cat("K-means clustering with",length(MatonHL_open_kmeans$size),"clusters of sizes",MatonHL_open_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(MatonHL_open_kmeans)
+```
+
+```{r visualize kmeans clusters, fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+fviz_cluster(MatonHL_open_kmeans, data = MatonHL_open[,2:49],
+             palette = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+             labelsize=10,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# hierarchical clustering
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix closed}
+MatonHL_clos_diss <- get_dist(MatonHL_clos[,2:49], method = "kendall")
+as.matrix(MatonHL_clos_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering closed, message=FALSE, warning=FALSE}
+MatonHL_clos_hc <- hclust(MatonHL_clos_diss, method = "ward.D2")
+require(factoextra)
+fviz_dend(MatonHL_clos_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree closed}
+MatonHL_clos_coph <- cophenetic(MatonHL_clos_hc)
+cor(MatonHL_clos_diss,MatonHL_clos_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram closed}
+MatonHL_clos_grp <- cutree(MatonHL_clos_hc, k = 4)
+MatonHL_clos_grp ; cat("\n")
+table(MatonHL_clos_grp)
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram closed, message=FALSE, warning=FALSE}
+fviz_dend(MatonHL_clos_hc, k = 4, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = c("red3", "darkgreen", "blue2", "purple"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+```
+
+## create dissimilarity (distance) matrix (open CLR)
+
+```{r distance matrix openCLR}
+MatonHL_open_diss <- get_dist(MatonHL_open[,2:49], method = "kendall")
+as.matrix(MatonHL_open_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering (open CLR)
+
+```{r hierarchical clustering openCLR, message=FALSE, warning=FALSE}
+MatonHL_open_hc <- hclust(MatonHL_open_diss, method = "ward.D2")
+require(factoextra)
+fviz_dend(MatonHL_open_hc, cex = 0.5)
+```
+
+## assess cluster tree (open CLR)
+
+```{r verify cluster tree openCLR}
+MatonHL_open_coph <- cophenetic(MatonHL_open_hc)
+cor(MatonHL_open_diss,MatonHL_open_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## try another linkage method for clustering
+
+```{r}
+MatonHL_open_hc <- hclust(MatonHL_open_diss, method = "average")
+MatonHL_open_coph <- cophenetic(MatonHL_open_hc)
+cor(MatonHL_open_diss,MatonHL_open_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups (open CLR)
+
+```{r cut dendrogram openCLR}
+MatonHL_open_grp <- cutree(MatonHL_open_hc, k = 3)
+table(MatonHL_open_grp)
+```
+
+## plot dendrogram with cuts (open CLR)
+
+```{r plot cut dendrogram openCLR, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+fviz_dend(MatonHL_open_hc, k = 4, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = rainbow(4, v=0.6, start = 0, end = 0.75),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+)
+```
+
+# correlation matrices
+```{r fig.height=10, fig.width=10}
+require(DataExplorer)
+plot_correlation(MatonHL_clos[,2:49], cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# correlation matrices (CLR)
+```{r correlation matrix clr, fig.height=10, fig.width=10}
+require(DataExplorer)
+plot_correlation(MatonHL_open[,2:49], cor_args = list("use" = "pairwise.complete.obs"))
+```

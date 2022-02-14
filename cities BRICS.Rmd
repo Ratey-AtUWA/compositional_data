@@ -1,0 +1,149 @@
+---
+title: "testing multivariate analyses on cities data"
+output: 
+  pdf_document: 
+    fig_width: 5
+    fig_height: 5
+---
+
+# load packages
+
+```{r load packages etc., include=FALSE}
+library(stringr)
+library(RcmdrMisc)
+library(MASS)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(DataExplorer)
+
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+```
+
+# load data
+
+**Data are from**: Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X., 2021. Land consumption in cities: A comparative study across the globe. *Cities*, **113**: 103163, https://doi.org/10.1016/j.cities.2021.103163. (numeric from Fig. 11)
+
+```{r}
+cities <- read.csv("cities_Hu_etal_2021.csv", stringsAsFactors = TRUE)
+# str(cities)
+row.names(cities) <- as.character(cities$City)
+```
+
+# make CLR-transformed dataset
+```{r}
+cities_clr <- cities
+cities_clr[,c("Compact","Open","Lightweight","Industry")] <- 
+  clr(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+names(cities);names(cities_clr)
+```
+
+# LDA linear discriminant analysis
+
+```{r LDA closed cities data}
+data0 <- cities
+data0[,c("Compact", "Open", "Lightweight", "Industry")] <- scale(data0[,c("Compact", "Open", "Lightweight", "Industry")])
+lda_cities_clos <- lda(formula = Global3 ~ Compact + Open + Lightweight + Industry, 
+                    data=data0,
+                    prior=as.numeric(summary(cities$Global3))/
+                      nrow(cities)) 
+print(lda_cities_clos)
+```
+
+```{r plot LDA closed, fig.height=5, fig.width=10}
+par(mfrow = c(1,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_cities_clos$scaling[,1], lda_cities_clos$scaling[,2], 
+     xlim = c(-1.5,1.5), ylim=c(-2,2),
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", main="(a) Variable Coefficients")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(lda_cities_clos$scaling[,1],lda_cities_clos$scaling[,2],
+     labels=c("Compact", "Open", "Lightweight","Industry"),
+     pos=1,cex=0.95,col="blue2",offset=0.2)
+
+ldaPred_cities_clos <- predict(lda_cities_clos)
+for(i in 1:NROW(lda_cities_clos$scaling)){
+  arrows(0,0,lda_cities_clos$scaling[i,1],lda_cities_clos$scaling[i,2],
+         length = 0.15, col = 8)
+}
+plot(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,2], 
+     col=c(2,"#00666680",8,"#99660080","grey")[cities$Global3], 
+     pch=c(0,15,1,19,3)[cities$Global3], xlim = c(-3,4),
+  lwd=c(2,1,2,1,2)[cities$Global3],
+  cex=c(1.8,1.8,2,2,2)[cities$Global3], 
+  xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+  main="(b) Predictions for Observations")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,2], 
+     labels=cities$Global3, col=c(2,"blue4","#991100","#663300",8)[cities$Global3],
+     pos=1, offset=0.15, cex=0.65)
+legend("topright",legend=levels(cities$Global3),
+       col=c(2,"#00666680",8,"#99660080","grey"),
+       pch=c(0,15,1,19,3), pt.lwd=c(2,1,2,1,2),
+       title="City zone",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, 
+       pt.cex=c(1.8,1.8,2,2,2), cex=1.)
+
+```
+
+```{r LDA open cities data}
+data0 <- cities_clr
+data0[,c("Compact", "Open", "Lightweight", "Industry")] <- scale(data0[,c("Compact", "Open", "Lightweight", "Industry")])
+lda_cities_open <- lda(formula = Global3 ~ Compact + Open + Lightweight + Industry, 
+                    data=data0,
+                    prior=as.numeric(summary(data0$Global3))/nrow(data0)) 
+print(lda_cities_open)
+cormat <- rcorr.adjust(data0[,c("Compact", "Open", "Lightweight", "Industry")], type="pearson")
+cat("\nCorrelation matrix for predictors:\n"); print(cormat$R$r, digits = 3)
+rm(list=c("cormat"))
+```
+
+```{r plot LDA closed, fig.height=5, fig.width=10}
+par(mfrow = c(1,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_cities_open$scaling[,1], lda_cities_open$scaling[,2], xlim = c(-1.2,1.2), ylim = c(-1.,1.), 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", main="(a) Variable Coefficients")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(lda_cities_open$scaling[,1], lda_cities_open$scaling[,2], labels=names(cities)[2:5],
+     pos=1,cex=0.95,col="blue2",offset=0.2)
+for(i in 1:NROW(lda_cities_open$scaling)){
+  arrows(0,0,lda_cities_open$scaling[i,1],lda_cities_open$scaling[i,2],
+         length = 0.15, col = 8)
+}
+ldaPred_cities_open <- predict(lda_cities_open)
+
+plot(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], col=c(2,4,6,8,1)[cities$Global3],
+     pch=c(0,15,1,19,3)[cities$Global3], xlim = c(-3,3),lwd=c(2,1,2,1,2)[cities$Global3],
+     cex=c(1.8,1.8,2,2,2)[cities$Global3], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], labels=cities$Global3, 
+     col=c(2,4,6,8,1)[cities$Global3], pos=1, offset=0.15, cex=0.65)
+legend("topright", legend=levels(cities$Global3), col=c(2,4,6,8,1),
+       pch=c(0,15,1,19,3), pt.lwd=c(2,1,2,1,2),
+       title="City zone",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, pt.cex=c(1.8,1.8,2,2,2), cex=0.9)
+
+```
+```{r compare models with reality, paged.print=FALSE}
+closComp <- as.data.frame(cbind(as.character(cities_clr$Global3), 
+                                as.character(ldaPred_cities_clos$class)))
+colnames(closComp) <- c("=-Actual-=","=-Predicted-=")
+closComp$test <- as.character(cities_clr$Global3) == as.character(ldaPred_cities_clos$class)
+k = length(which(closComp$test == TRUE))
+cat("Predictions by LDA using closed data:",k,"out of",NROW(cities_clr),"=",paste0(100*k/NROW(cities_clr),"% correct\n"))
+closComp
+
+openComp <- as.data.frame(cbind(as.character(cities_clr$Global3), as.character(ldaPred_cities_open$class)))
+colnames(openComp) <- c("=-Actual-=","=-Predicted-=")
+openComp$test <- as.character(cities_clr$Global3) == as.character(ldaPred_cities_open$class)
+k = length(which(openComp$test == TRUE))
+cat("\nPredictions by LDA using open data:",k,"out of",NROW(cities_clr),"=",paste0(100*k/NROW(cities_clr),"% correct\n"))
+openComp
+```
+

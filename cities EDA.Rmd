@@ -1,0 +1,679 @@
+---
+title: "testing multivariate analyses on cities data"
+subtitle: "Land use proportional area data for 40 cities on Earth"
+documentclass: article
+classoption: a4paper
+geometry: margin=0.787in
+output: 
+  pdf_document: 
+  highlight: espresso
+  fig_height: "50%"
+  fig_width: "50%"
+  fig_caption: TRUE
+  number_sections: TRUE
+  toc: TRUE
+---
+
+# load packages
+
+```{r load packages etc., include=FALSE}
+library(stringr)
+library(RcmdrMisc)
+library(MASS)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(DataExplorer)
+
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+```
+
+# load data
+
+**Data are from**: Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X., 2021. Land consumption in cities: A comparative study across the globe. *Cities*, **113**: 103163, https://doi.org/10.1016/j.cities.2021.103163. (numeric from Fig. 11)
+
+```{r}
+cities <- read.csv("cities_Hu_etal_2021.csv", stringsAsFactors = TRUE)
+# str(cities)
+row.names(cities) <- as.character(cities$City)
+cities$sType <- as.character(cities$Type)
+cities$sType <- gsub("Compact-Open","CO",cities$sType)
+cities$sType <- gsub("Open-Lightweight","OL",cities$sType)
+cities$sType <- gsub("Compact","C",cities$sType)
+cities$sType <- gsub("Open","O",cities$sType)
+cities$sType <- gsub("Industrial","I",cities$sType)
+cities$sType <- as.factor(cities$sType)
+```
+
+# make CLR-transformed dataset
+```{r}
+cities_clr <- cities
+cities_clr[,c("Compact","Open","Lightweight","Industry")] <- 
+  clr(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+names(cities);names(cities_clr)
+```
+
+# correlation matrices
+```{r correlation matrix closed, fig.height=4, fig.width=3.5, fig.cap="Correlation matrix for closed variables."}
+require(DataExplorer)
+plot_correlation(cities[,c("Compact","Open","Lightweight","Industry")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# correlation matrices (CLR)
+```{r correlation matrix clr, fig.height=4, fig.width=3.5, fig.cap="Correlation matrix for open (CLR-transformed) variables."}
+require(DataExplorer)
+plot_correlation(cities_clr[,c("Compact","Open","Lightweight","Industry")],
+                 cor_args = list("use" = "pairwise.complete.obs"))
+```
+
+# principal components analysis
+
+```{r run and summarise PCA}
+data0 <- na.omit(cities[,c("Compact","Open","Lightweight","Industry")])
+pca_cities_clos <- prcomp(data0, scale. = TRUE)
+pca_cities_clos$rot
+cat("...\n\nComponent Variances\n")
+pca_cities_clos$sdev^2
+cat("\n--------------------\n")
+
+data0 <- na.omit(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+pca_cities_open <- prcomp(data0, scale. = TRUE)
+pca_cities_open$rot
+cat("...\n\nComponent Variances\n")
+pca_cities_open$sdev^2
+cat("\n--------------------\n")
+rm(data0)
+```
+
+```{r visualise PCA, fig.height=5, fig.width=10}
+require(car)
+palette(c("black","blue","green4","red2","purple",
+          "darkcyan","firebrick","grey","grey40","white",
+          "transparent"))
+par(mfrow=c(1,2), mar = c(3.5,3.5,3.5,3.5), oma = c(0,0,0,0), 
+    mgp=c(1.7,0.3,0), tcl = 0.25, font.lab=2,
+    lend = "square", ljoin = "mitre")
+# choose components and set scaling factor (sf)
+v1 <- 1
+v2 <- 2
+sf <- 0.2
+
+biplot(pca_cities_clos, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.4, arrow.len = 0.08,
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("Untransformed data\n(compositionally closed)",
+      side = 3, line = -2, font = 2, adj = 0.98)
+data0 <- na.omit(cities[,c("Type","Global","Region","Compact","Open","Lightweight","Industry")])
+points(pca_cities_clos$x[,v1]*sf, pca_cities_clos$x[,v2]*sf*1.5,
+       pch = c(22,21,24,0,1)[data0$Type],
+       bg = c(2,3,4,5,6)[data0$Type],
+       col = c(2,3,4,5,6)[data0$Type],
+       cex = c(1.2,1.4,1.2,1.2,1.4)[data0$Type])
+dataEllipse(x=pca_cities_clos$x[,v1]*sf, y=pca_cities_clos$x[,v2]*sf*1.5,
+            groups = data0$Type, add = TRUE,
+            plot.points = FALSE, levels = c(0.9),
+            center.pch = 3, col = c(2,3,4,5,6,7),
+            lty = 2, lwd = 1, center.cex = 2.4, group.labels = "")
+legend("bottomright", bty = "o", inset = 0.03,
+       box.col = "gray", box.lwd = 2, bg = 10,
+       legend = levels(data0$Type),
+       pch = c(22,21,24,0,1),
+       col = c(2,3,4,5,6), pt.bg = c(2,3,4,5,6),
+       pt.cex = c(1.2, 1.4, 1.2,1.2,1.4),
+       cex = 0.9, y.intersp = 0.9)
+
+# v1 <- 1
+# v2 <- 3
+sf <- 0.4
+
+biplot(pca_cities_open, choices = c(v1,v2), col = c(11,9), cex=c(1,0.65),
+       pc.biplot = FALSE, scale = 0.5, arrow.len = 0.08,
+xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("CLR\ntransformed\ndata\n(no closure)",
+      side = 3, line = -4, font = 2, adj = 0.02)
+data0 <- na.omit(cities_clr[,c("Type","Compact","Open","Lightweight","Industry")])
+points(pca_cities_open$x[,v1]*sf, pca_cities_open$x[,v2]*sf*1.5,
+       pch = c(22,21,24,0,1)[data0$Type],
+       bg = c(2,3,4,5,6)[data0$Type],
+       col = c(2,3,4,5,6)[data0$Type],
+       cex = c(1.2,1.4,1.2,1.2,1.4)[data0$Type])
+dataEllipse(x=pca_cities_open$x[,v1]*sf, y=pca_cities_open$x[,v2]*sf*1.5,
+            groups = data0$Type, add = TRUE,
+            plot.points = FALSE, levels = c(0.9),
+            center.pch = 3, col = c(2,3,4,5,6),
+            lty = 2, lwd = 1, center.cex = 2.4, group.labels = "")
+legend("bottomright", bty = "o", inset = 0.03,
+       box.col = "gray", box.lwd = 2, bg = 10,
+       legend = levels(data0$Type),
+       pch = c(22,21,24,0,1),
+       col = c(2,3,4,5,6), pt.bg = c(2,3,4,5,6),
+       pt.cex = c(1.2, 1.4, 1.2,1.2,1.4),
+       cex = 0.9, y.intersp = 0.9)
+rm(list = c("v1","v2","sf","data0"))
+```
+
+# K-means clustering
+
+```{r assess optimum clusters for closed data, fig.height=3, fig.width=4.}
+require(factoextra)
+data0 <- na.omit(cities[,c("Compact","Open","Lightweight","Industry")])
+fviz_nbclust(data0, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+```{r assess optimum clusters for CLR data, fig.height=3, fig.width=4}
+require(factoextra)
+data0 <- na.omit(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+fviz_nbclust(data0, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)
+```
+
+# compute K-means closed
+
+```{r}
+data0 <- na.omit(cities[,c("sType","Compact","Open","Lightweight","Industry")])
+data0[,c("Compact","Open","Lightweight","Industry")] <- scale(data0[,c("Compact","Open","Lightweight","Industry")])
+set.seed(123)
+cities_clos_kmeans <- kmeans(data0[,2:NCOL(data0)], 4, nstart = 25)
+cat("K-means clustering with",length(cities_clos_kmeans$size),"clusters of sizes",cities_clos_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(cities_clos_kmeans)
+```
+
+# plot kmeans clusters closed
+
+```{r visualize kmeans clusters closed, fig.height=5, fig.width=6, message=FALSE, warning=FALSE}
+row.names(data0) <- paste0(data0$sType,seq(1,NROW(data0)))
+fviz_cluster(cities_clos_kmeans, data = data0[,2:NCOL(data0)],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07","purple2"),
+             labelsize=10,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# compute K-means open
+
+```{r}
+data0 <- na.omit(cities_clr[,c("sType","Compact","Open","Lightweight","Industry")])
+data0[,c("Compact","Open","Lightweight","Industry")] <- scale(data0[,c("Compact","Open","Lightweight","Industry")])
+set.seed(123)
+cities_open_kmeans <- kmeans(data0[,2:NCOL(data0)], 4, nstart = 25)
+cat("K-means clustering with",length(cities_open_kmeans$size),"clusters of sizes",cities_open_kmeans$size,"\n")
+cat("\ncomponents of output object are:\n")
+ls(cities_open_kmeans)
+```
+
+# plot kmeans clusters open
+
+```{r visualize kmeans clusters open, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+row.names(data0) <- paste0(data0$sType,seq(1,NROW(data0)))
+fviz_cluster(cities_open_kmeans, data = data0[,2:NCOL(data0)],
+             palette = c("#00AFBB", "#E7B800", "#FC4E07","purple2"),
+             labelsize=10,
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal()
+             )
+```
+
+# hierarchical clustering
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix closed, message=FALSE, warning=FALSE}
+dataHC <- na.omit(cities[,c("sType","Compact","Open","Lightweight","Industry")])
+row.names(dataHC) <- paste0(dataHC$sType, seq(1,NROW(dataHC)))
+dataHC$sType <- NULL
+cities_clos_diss <- get_dist(dataHC, method = "euclidean")
+as.matrix(cities_clos_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering closed, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+cities_clos_hc <- hclust(cities_clos_diss, method = "ward.D2")
+require(factoextra)
+fviz_dend(cities_clos_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree closed}
+cities_clos_coph <- cophenetic(cities_clos_hc)
+cor(cities_clos_diss,cities_clos_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram closed}
+cities_clos_grp <- cutree(cities_clos_hc, k = 5)
+cities_clos_grp ; cat("\n")
+table(cities_clos_grp)
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram closed, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+fviz_dend(cities_clos_hc, k = 5, # Cut in five groups
+          cex = 0.75, # label size
+          k_colors = c("red3", "blue2", "purple","sienna","grey40"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+```
+
+# hierarchical clustering (CLR-open data)
+
+## create dissimilarity (distance) matrix
+
+```{r distance matrix open, message=FALSE, warning=FALSE}
+dataHC <- na.omit(cities_clr[,c("sType","Compact","Open","Lightweight","Industry")])
+row.names(dataHC) <- paste0(dataHC$sType, seq(1,NROW(dataHC)))
+dataHC$Type <- NULL
+cities_open_diss <- get_dist(dataHC, method = "euclidean")
+as.matrix(cities_open_diss)[1:8, 1:8]
+```
+
+## perform hierarchical clustering
+
+```{r hierarchical clustering open, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+cities_open_hc <- hclust(cities_open_diss, method = "ward.D2")
+require(factoextra)
+fviz_dend(cities_open_hc, cex = 0.5)
+```
+
+## assess cluster tree
+
+```{r verify cluster tree open}
+cities_open_coph <- cophenetic(cities_open_hc)
+cor(cities_open_diss,cities_open_coph)
+cat("\nRule-of-thumb: cluster tree represents actual distance matrix accurately enough if r>0.75\n")
+```
+
+## cut dendrogram into different groups
+
+```{r cut dendrogram open}
+cities_open_grp <- cutree(cities_open_hc, k = 5)
+cities_open_grp ; cat("\n")
+table(cities_open_grp)
+```
+
+## plot dendrogram with cuts
+
+```{r plot cut dendrogram open, fig.height=4.5, fig.width=10, message=FALSE, warning=FALSE}
+fviz_dend(cities_open_hc, k = 5, # Cut in five groups
+          cex = 0.75, # label size
+          k_colors = c("red3", "blue2", "purple"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+)
+```
+
+# LDA linear discriminant analysis
+
+```{r LDA closed cities data}
+data0 <- cities
+data0[,c("Compact", "Open", "Lightweight", "Industry")] <- scale(data0[,c("Compact", "Open", "Lightweight", "Industry")])
+lda_cities_clos <- lda(formula = Type ~ Compact + Open + Lightweight + Industry, 
+                    data=data0,
+                    prior=as.numeric(summary(cities$Type))/
+                      nrow(cities)) 
+print(lda_cities_clos)
+```
+
+```{r plot LDA closed, fig.height=5, fig.width=10}
+par(mfrow = c(1,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_cities_clos$scaling[,1], lda_cities_clos$scaling[,2], 
+     xlim = c(-0.5,3), ylim=c(-2,2),
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", main="(a) Variable Coefficients")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(lda_cities_clos$scaling[,1],lda_cities_clos$scaling[,2],
+     labels=c("Compact", "Open", "Lightweight","Industry"),
+     pos=1,cex=0.95,col="blue2",offset=0.2)
+
+ldaPred_cities_clos <- predict(lda_cities_clos)
+for(i in 1:NROW(lda_cities_clos$scaling)){
+  arrows(0,0,lda_cities_clos$scaling[i,1],lda_cities_clos$scaling[i,2],
+         length = 0.15, col = 8)
+}
+plot(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,2], 
+     col=c(2,"#00666680",8,"#99660080","grey")[cities$Type], 
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-3,14),
+  lwd=c(2,1,2,1,2)[cities$Type],
+  cex=c(1.8,1.8,2,2,2)[cities$Type], 
+  xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+  main="(b) Predictions for Observations")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,2], 
+     labels=cities$Type, col=c(2,"blue4","#991100","#663300",8)[cities$Type],
+     pos=1, offset=0.15, cex=0.65)
+legend("topright",legend=levels(cities$Type),
+       col=c(2,"#00666680",8,"#99660080","grey"),
+       pch=c(0,15,1,19,3), pt.lwd=c(2,1,2,1,2),
+       title="City Type",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, 
+       pt.cex=c(1.8,1.8,2,2,2), cex=1.)
+
+```
+
+```{r plot all LDA dimensions closed, fig.height=4.5, fig.width=12}
+par(mfrow = c(1,3), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+
+plot(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,2], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-4,14),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,2], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+legend("topright", legend=levels(cities$Type), col=c(2,4,6,8,1),
+       pch=c(0,15,1,19,3), pt.lwd=c(2,1,2,1,2),
+       title="City Type",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, pt.cex=c(1.8,1.8,2,2,2), cex=0.9)
+
+plot(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,3], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-4,14),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [3]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_clos$x[,1], ldaPred_cities_clos$x[,3], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+
+plot(ldaPred_cities_clos$x[,2], ldaPred_cities_clos$x[,3], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-4,6),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [2]", ylab="Linear Discriminant [3]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_clos$x[,2], ldaPred_cities_clos$x[,3], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+
+par(mfrow=c(1,1))
+```
+
+```{r LDA open cities data}
+data0 <- cities_clr
+data0[,c("Compact", "Open", "Lightweight", "Industry")] <- scale(data0[,c("Compact", "Open", "Lightweight", "Industry")])
+lda_cities_open <- lda(formula = Type ~ Compact + Open + Lightweight + Industry, 
+                    data=data0,
+                    prior=as.numeric(summary(data0$Type))/nrow(data0)) 
+print(lda_cities_open)
+cormat <- rcorr.adjust(data0[,c("Compact", "Open", "Lightweight", "Industry")], type="pearson")
+cat("\nCorrelation matrix for predictors:\n"); print(cormat$R$r, digits = 3)
+rm(cormat)
+```
+
+```{r plot LDA open, fig.height=5, fig.width=10}
+par(mfrow = c(1,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_cities_open$scaling[,1], lda_cities_open$scaling[,2], xlim = c(-4,2), ylim = c(-1.2,2), 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", main="(a) Variable Coefficients")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(lda_cities_open$scaling[,1], lda_cities_open$scaling[,2], labels=names(cities)[2:5],
+     pos=1,cex=0.95,col="blue2",offset=0.2)
+for(i in 1:NROW(lda_cities_open$scaling)){
+  arrows(0,0,lda_cities_open$scaling[i,1],lda_cities_open$scaling[i,2],
+         length = 0.15, col = 8)
+}
+ldaPred_cities_open <- predict(lda_cities_open)
+
+plot(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-14,7),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+legend("topleft", legend=levels(cities$Type), col=c(2,4,6,8,1),
+       pch=c(0,15,1,19,3), pt.lwd=c(2,1,2,1,2),
+       title="City Type",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, pt.cex=c(1.8,1.8,2,2,2), cex=0.9)
+par(mfrow=c(1,1))
+```
+
+```{r plot all LDA dimensions open, fig.height=4.5, fig.width=12}
+par(mfrow = c(1,3), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+
+plot(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-14,7),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+legend("topleft", legend=levels(cities$Type), col=c(2,4,6,8,1),
+       pch=c(0,15,1,19,3), pt.lwd=c(2,1,2,1,2),
+       title="City Type",bty="o", box.col="grey90", 
+       box.lwd=2, inset=0.02, pt.cex=c(1.8,1.8,2,2,2), cex=0.9)
+
+plot(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,3], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-14,7),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [3]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,3], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+
+plot(ldaPred_cities_open$x[,2], ldaPred_cities_open$x[,3], col=c(2,4,6,8,1)[cities$Type],
+     pch=c(0,15,1,19,3)[cities$Type], xlim = c(-14,7),lwd=c(2,1,2,1,2)[cities$Type],
+     cex=c(1.8,1.8,2,2,2)[cities$Type], main="(b) Predictions for Observations", 
+     xlab="Linear Discriminant [2]", ylab="Linear Discriminant [3]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(ldaPred_cities_open$x[,2], ldaPred_cities_open$x[,3], labels=cities$Type, 
+     col=c(2,4,6,8,1)[cities$Type], pos=1, offset=0.15, cex=0.65)
+
+par(mfrow=c(1,1))
+```
+
+```{r eval=FALSE, include=FALSE}
+data3d <- as.data.frame(lda_cities_open$scaling)
+scatter3d(ldaPred_cities_open$x[,1], ldaPred_cities_open$x[,2], ldaPred_cities_open$x[,3],
+          groups = ldaPred_cities_open$class,
+          point.col = c(2,3,4,5,6), surface = F,
+          labels = cities_clr$City)
+```
+
+```{r compare models with reality, paged.print=FALSE}
+closComp <- as.data.frame(cbind(as.character(cities_clr$Type), 
+                                as.character(ldaPred_cities_clos$class)))
+colnames(closComp) <- c("=-Actual-=","=-Predicted-=")
+closComp$test <- as.character(cities_clr$Type) == as.character(ldaPred_cities_clos$class)
+k = length(which(closComp$test == TRUE))
+cat("Predictions by LDA using closed data:",k,"out of",NROW(cities_clr),"=",paste0(100*k/NROW(cities_clr),"% correct\n"))
+closComp
+
+openComp <- as.data.frame(cbind(as.character(cities_clr$Type), as.character(ldaPred_cities_open$class)))
+colnames(openComp) <- c("=-Actual-=","=-Predicted-=")
+openComp$test <- as.character(cities_clr$Type) == as.character(ldaPred_cities_open$class)
+k = length(which(openComp$test == TRUE))
+cat("\nPredictions by LDA using open data:",k,"out of",NROW(cities_clr),"=",paste0(100*k/NROW(cities_clr),"% correct\n"))
+openComp
+```
+
+```{r LDA train and predict closed, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(MASS)
+library(RcmdrMisc)
+library(knitr)
+library(beepr)
+### MATCH this to read file below
+# sink(file="cities_type_pred.csv", type="output")
+n0 <- 1000 # number of iterations
+ftrain <- 0.75 # proportion of observations in training set
+results <- data.frame(
+    Rep = rep(NA, n0),
+    matches = rep(NA, n0),
+    non_matches = rep(NA, n0),
+    success = rep(NA, n0))
+# train <- sample(1:NROW(cities), round(NROW(cities)-5,0))
+train <- sample(1:NROW(cities), round(NROW(cities) * ftrain,0))
+lda.cities.train <- lda(formula = Type ~  Compact + Open + Lightweight + Industry, 
+                    data = cities[train,],
+                    prior = as.numeric(summary(cities$Type[train]))/
+                      nrow(cities[train,])) 
+lda.cities.pred <- predict(lda.cities.train, cities[-train,])
+# make vector of individual category non-matches
+matchByClass <- data.frame(Matches = rep(0,nlevels(cities$Type))) 
+rownames(matchByClass) <- levels(lda.cities.pred$class)
+e0 <- 0
+# colnames(matchByClass) <- c("Matches")
+for (i in 1:n0) {
+  # train <- sample(1:NROW(cities), round(NROW(cities)-5,0))
+  train <- sample(1:NROW(cities), round(NROW(cities) * ftrain,0))
+  if (is.na(match(NA,tapply(cities[train,]$Open, cities[train,]$Type, sd, na.rm=T))) == TRUE) {
+    lda.cities.train <- lda(formula = Type ~ Compact + Open + Lightweight + Industry, 
+                          data = cities[train,],
+                          prior=as.numeric(summary(cities$Type[train]))/
+                        nrow(cities[train,])) 
+    lda.cities.pred <- predict(lda.cities.train, cities[-train,])
+    e0 <- e0 + 1
+  }
+
+  k=0 # number of non-matches
+  m0 <- as.matrix(rep(0,5)) # vector of individual category non-matches
+  rownames(m0) <- levels(lda.cities.pred$class)
+  rownames(matchByClass) <- levels(lda.cities.pred$class)
+  colnames(matchByClass) <- c("Matches")
+  for (jM in 1:NROW(cities[-train,])) {
+    # cat("big loop #",jM,"\n")
+    for (jS in 1:nlevels(lda.cities.pred$class)) {
+      if((lda.cities.pred$class[jM] == levels(lda.cities.pred$class)[jS]) & 
+         (cities$Type[-train][jM] == levels(lda.cities.pred$class)[jS]) ) 
+        m0[jS] = m0[jS] + 1
+      else  m0[jS] = m0[jS] 
+      # cat("small loop iteration #",jS,"; matching",
+      #     levels(lda.cities.pred$class)[jS],
+      #     "; matches =",m0,"\n")
+    }
+    k = sum(m0)
+    # cat("medium loop iteration ",jM,"; matches = ",k,"\n", sep="")
+    # if(jM==NROW(cities[-train,])) 
+  }
+  # cat("GIANT LOOP #",i,"\n")
+  matchByClass <- matchByClass + m0
+  # output to results data frame: iteration, matches, non-matches, proportion matched
+  results[i,] <- c(i, k, NROW(cities[-train,])-k, signif(k/NROW(cities[-train,]),3))
+  # cbind(lda.cities.pred$class,cities$Type[-train])
+}
+matchByClass$Actual <- round(1000*as.numeric(summary(cities$Type))*
+                               (NROW(cities[-train,])/NROW(cities)),0)
+matchByClass$Proportion <- matchByClass$Matches/matchByClass$Actual
+
+# sink() # close output file
+### make sure read file is SAME AS SINK
+beep(sound = 10)
+
+# results <- read.csv("cities_type_pred.csv")
+{cat("[Based on", n0, "random subsets of dataset to",
+    "train LDA model to\npredict remaining observations]\n")
+cat("Number of obs. in random subsets =",NROW(train),
+    " (predicting",NROW(cities)-NROW(train),"samples)\n")
+print(numSummary(results[,2:4], statistics=c("mean","sd"))$table)
+ns0 <- numSummary(results$success)
+t0 <- t.test(results$success)
+cat(rep("-\u2013-",24),
+    "\nStat. summary for 'success':\nMean = ",round(ns0$table[1],4),
+    ", sd = ",round(ns0$table[2],4),", 95% confidence interval = (",
+    signif(t0$conf.int[1],3),", ",signif(t0$conf.int[2],4),") (after ",i," reps)\n", sep="")
+cat(n0-e0,"iterations failed due to random sampling missing a group\n\n")
+print(matchByClass, digits=3)}
+rm(list = c("n0","ftrain","i","e0","jS","jM","k","m0","matchByClass","results","train"))
+```
+
+```{r LDA train and predict open, message=FALSE, warning=FALSE, , paged.print=FALSE}
+n0 <- 1000 # number of iterations
+ftrain <- 0.75 # proportion of observations in training set
+results <- data.frame(
+  Rep = rep(NA, n0),
+  matches = rep(NA, n0),
+  non_matches = rep(NA, n0),
+  success = rep(NA, n0))
+# train <- sample(1:NROW(cities_clr), round(NROW(cities_clr)-5,0))
+train <- sample(1:NROW(cities_clr), round(NROW(cities_clr) * ftrain,0))
+lda.cities_clr.train <- lda(formula = Type ~  Compact + Open + Lightweight + Industry, 
+                        data = cities_clr[train,],
+                        prior = as.numeric(summary(cities_clr$Type[train]))/
+                          nrow(cities_clr[train,])) 
+lda.cities_clr.pred <- predict(lda.cities_clr.train, cities_clr[-train,])
+# make vector of individual category non-matches
+matchByClass <- data.frame(Matches = rep(0,nlevels(cities_clr$Type))) 
+rownames(matchByClass) <- levels(lda.cities_clr.pred$class)
+e0 <- 0
+# colnames(matchByClass) <- c("Matches")
+for (i in 1:n0) {
+  # train <- sample(1:NROW(cities_clr), round(NROW(cities_clr)-5,0))
+  train <- sample(1:NROW(cities_clr), round(NROW(cities_clr) * ftrain,0))
+  if (is.na(match(NA,tapply(cities_clr[train,]$Open, cities_clr[train,]$Type, sd, na.rm=T))) == TRUE) {
+    lda.cities_clr.train <- lda(formula = Type ~ Compact + Open + Lightweight + Industry, 
+                            data = cities_clr[train,],
+                            prior=as.numeric(summary(cities_clr$Type[train]))/
+                              nrow(cities_clr[train,])) 
+    lda.cities_clr.pred <- predict(lda.cities_clr.train, cities_clr[-train,])
+    e0 <- e0 + 1
+  }
+  
+  k=0 # number of non-matches
+  m0 <- as.matrix(rep(0,5)) # vector of individual category non-matches
+  rownames(m0) <- levels(lda.cities_clr.pred$class)
+  rownames(matchByClass) <- levels(lda.cities_clr.pred$class)
+  colnames(matchByClass) <- c("Matches")
+  for (jM in 1:NROW(cities_clr[-train,])) {
+    # cat("big loop #",jM,"\n")
+    for (jS in 1:nlevels(lda.cities_clr.pred$class)) {
+      if((lda.cities_clr.pred$class[jM] == levels(lda.cities_clr.pred$class)[jS]) & 
+         (cities_clr$Type[-train][jM] == levels(lda.cities_clr.pred$class)[jS]) ) 
+        m0[jS] = m0[jS] + 1
+      else  m0[jS] = m0[jS] 
+      # cat("small loop iteration #",jS,"; matching",
+      #     levels(lda.cities_clr.pred$class)[jS],
+      #     "; matches =",m0,"\n")
+    }
+    k = sum(m0)
+    # cat("medium loop iteration ",jM,"; matches = ",k,"\n", sep="")
+    # if(jM==NROW(cities_clr[-train,])) 
+  }
+  # cat("GIANT LOOP #",i,"\n")
+  matchByClass <- matchByClass + m0
+  # output to results data frame: iteration, matches, non-matches, proportion matched
+  results[i,] <- c(i, k, NROW(cities_clr[-train,])-k, signif(k/NROW(cities_clr[-train,]),3))
+  # cbind(lda.cities_clr.pred$class,cities_clr$Type[-train])
+}
+matchByClass$Actual <- round(n0*as.numeric(summary(cities_clr$Type))*
+                               (NROW(cities_clr[-train,])/NROW(cities_clr)),0)
+matchByClass$Proportion <- matchByClass$Matches/matchByClass$Actual
+
+beep(sound = 10)
+
+{cat("[Based on", n0, "random subsets of dataset to",
+     "train LDA model to\npredict remaining observations]\n")
+  cat("Number of obs. in random subsets =",NROW(train),
+      " (predicting",NROW(cities_clr)-NROW(train),"samples)\n")
+  print(numSummary(results[,2:4], statistics=c("mean","sd"))$table)
+  ns0 <- numSummary(results$success)
+  t0 <- t.test(results$success)
+  cat(rep("-\u2013-",24),
+      "\nStat. summary for 'success':\nMean = ",round(ns0$table[1],4),
+      ", sd = ",round(ns0$table[2],4),", 95% confidence interval = (",
+      signif(t0$conf.int[1],3),", ",signif(t0$conf.int[2],4),") (after ",i," reps)\n", sep="")
+  cat(n0-e0,"iterations failed due to random sampling missing a group\n\n")
+  print(matchByClass, digits=3)}
+rm(list = c("n0","ftrain","i","e0","jS","jM","k","m0","matchByClass","results","train"))
+```
