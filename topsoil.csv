@@ -1,4 +1,4 @@
-"Year","LF3","LF3B","LF5","Easting","Northing","Latitude","Longitude","Depth.upper","Depth.lower","Depth.mean","Gravel.pct","Sand.pct","Silt.pct","Clay.pct","Sand.corr","Silt.corr","Clay.corr","Bulk.density","C.pct","N.pct","C.N.ratio","pH.H2O","pH.CaCl2","EC","CEC"
+"Year","LF3","LF3B","LF5","Easting","Northing","Latitude","Longitude","Depth.upper","Depth.lower","Depth.mean","Gravel","Sand.raw","Silt.raw","Clay.raw","Sand","Silt","Clay","Bulk.density","C.pct","N.pct","C.N.ratio","pH.H2O","pH.CaCl2","EC","CEC"
 "2015","Erosional","Erosional","US",498504,6406727,116.984079,-32.4766694,0,15,7.5,11.08,88,8,4,78.2,7.1,3.6,1.52,2.09,0.1,20.91,5.65,4.9,53.8,3.5
 "2015","Erosional","Erosional","US",498440,6406561,116.983398,-32.4781668,0,15,7.5,14.87,84.25,14,1.75,71.7,11.9,1.5,1.66,1.23,0.06,19.76,6.26,5.06,74.2,3.98
 "2015","Depositional","Depositional","VF",499026,6406415,116.989634,-32.4794845,0,20,10,0.1,78.5,9.25,12.25,78.5,9.25,12.25,1.06,2.58,0.18,14.23,6.2,4.84,101.4,9.42
