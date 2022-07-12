@@ -1,8 +1,10 @@
 # compositional_data
 analyses of multivariate data having fixed-sum closure (i.e. compositions)
 
-Developed for the short course "<em>Data Analysis with R for Compositional Data</em>" at
+Material created during development of the short course "<em>Data Analysis with R for Compositional Data</em>" at
 https://www.uwa.edu.au/study/Courses-and-Careers/short-courses/UWA-Plus/Micro-credential-Data-Analysis-with-R-for-compositional-data
+
+<b>THE FINAL COURSE FILES ARE NOT INCLUDED IN THIS REPOSITORY</b>.
 
 Some of this course's aims are:
 <ol>
