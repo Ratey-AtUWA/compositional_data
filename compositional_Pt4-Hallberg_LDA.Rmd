@@ -1,0 +1,470 @@
+---
+documentclass: article
+classoption: a4paper
+geometry: margin=0.6in
+output: 
+  pdf_document: 
+    fig_caption: TRUE
+    number_sections: TRUE
+    toc: no
+    highlight: tango
+  html_document: 
+    toc_depth: 2
+    fig_caption: yes
+    number_sections: yes
+    self_contained: no
+  word_document: 
+    toc_depth: 2
+    fig_caption: yes
+fontsize: 12pt
+header-includes:
+  \usepackage{sourcesanspro}
+  \usepackage[T1]{fontenc}
+  \renewcommand{\familydefault}{\sfdefault}
+  \renewcommand{\thefigure}{4.\arabic{figure}}
+  \renewcommand{\thetable}{4.\arabic{table}}
+---
+
+\setcounter{section}{3}
+
+```{r load knitr, include=FALSE}
+library(flextable)
+library(magrittr)
+library(png)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+
+addImg <- function(obj, x = NULL, y = NULL, width = NULL, interpolate = TRUE){
+  if(is.null(x) | is.null(y) | is.null(width)){stop("Must provide args 'x', 'y', and 'width'")}
+  USR <- par()$usr ; PIN <- par()$pin ; DIM <- dim(obj) ; ARp <- DIM[1]/DIM[2]
+  WIDi <- width/(USR[2]-USR[1])*PIN[1] ;   HEIi <- WIDi * ARp 
+  HEIu <- HEIi/PIN[2]*(USR[4]-USR[3]) 
+  rasterImage(image = obj, xleft = x-(width/2), xright = x+(width/2),
+            ybottom = y-(HEIu/2), ytop = y+(HEIu/2), interpolate = interpolate)
+}
+```
+
+```{r page 1 header hide code, fig.height=1.5, fig.width=10, echo=FALSE, out.width="100%", fig.align='right', results='hold'}
+logo <- readPNG("UWA logo_text_V_wsL.png")
+par(mar = c(0,0,0,0))
+layout(matrix(c(1,1,1,1,2),nrow = 1))
+
+plot(c(0,1),c(0,1), axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+text(-0.025,0.9, pos = 4, cex = 2.6, font = 2, 
+     labels="ENVTM501 Data Analysis in R for Compositional Data")
+text(-0.025,0.6, pos = 4, cex = 2.2, 
+     labels="Multivariate analyses on whole-rock major element compositional data")
+text(-0.025,0.4, pos = 4, font = 3, cex = 1.4, col = 12,
+     labels="Geochemical data for the Yilgarn Craton, Western Australia by J.A. Hallberg")
+text(1,0.1, pos = 2, font = 3, family = 'serif', cex = 1.5, col = 2,
+     labels="Andrew Rate, School of Agriculture and Environment")
+plot(1,1, axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+addImg(logo, x = 1.2, y = 1, width = 0.5)
+par(mar = c(3.5,3.5,0.5,0.5))
+```
+
+```{r load packages etc., message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(ggplot2)
+library(reshape2)
+library(ggpubr)
+library(flextable)
+library(magrittr)
+library(RcmdrMisc)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+UWApal <- c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E","gray40","gray85","#FFFFFF","transparent"); palette(UWApal)
+```
+
+```{r read file and show data, include=FALSE, results='hide'}
+Hallberg <- read.csv("Hallberg.csv", stringsAsFactors = TRUE)
+```
+
+```{r make new Rock factor with abbreviated names, eval=FALSE, include=FALSE, results='hold'}
+# row.names(Hallberg) <- paste0(as.character(Hallberg$Rock),seq(1:NROW(Hallberg)))
+# Hallberg$sRock <- as.character(Hallberg$Rock)
+# Hallberg$sRock <- gsub("Basaltic Trachyandesite","C",Hallberg$sRock)
+# Hallberg$sRock <- gsub("Basaltic Andesite","L",Hallberg$sRock)
+# Hallberg$sRock <- gsub("Andesite","A",Hallberg$sRock)
+# Hallberg$sRock <- gsub("Trachybasalt","T",Hallberg$sRock)
+# Hallberg$sRock <- gsub("Basalt","B",Hallberg$sRock)
+# Hallberg$sRock <- gsub("Basanite","N",Hallberg$sRock)
+# Hallberg$sRock <- gsub("Phonotephrite","P",Hallberg$sRock)
+# Hallberg$sRock <- as.factor(Hallberg$sRock)
+```
+
+```{r clr-tranform data, include=FALSE, results='hold'}
+Hallberg_clr <- Hallberg
+Hallberg_clr[,11:24] <- 
+  clr(Hallberg_clr[,11:24], ifwarn = FALSE) # recommend ifwarn = TRUE
+```
+
+We are using a curated version of a whole rock major element dataset from 
+Hallberg (https://catalogue.data.wa.gov.au/dataset/hallberg-geochemistry)
+
+# LDA -- Linear Discriminant Analysis
+
+We use **linear discriminant analysis (LDA)** to create functions of the dataset
+variables which maximise the separation between pre-defined categories. LDA is
+also sensitive to compositional closure, as I hope we're starting to expect by
+now! Predicting existing categories is not the most useful application of LDA 
+-- ideally, we would like to measure some key variables so we can predict a
+previously unknown category (a strategy for machine learning). Towards the end
+of this section we will see if we can divide our dataset into two groups – one
+to 'train' our LDA model to generate a set of linear discriminant functions,
+which we can then apply to the remaining observations in our dataset to
+*validate* our LDA model (a later session will cover this issue).
+
+Linear discriminant analysis resembles principal components analysis (PCA), in
+that it generates new sets of variables (dimensions) to reduce the complexity
+(*i.e*. dimensionality) of multivariate data. Another important feature of LDA,
+as mentioned above, is its ability to classify the observations in our data --
+LDA is a **supervised classification** method, in that it requires us to use
+pre-defined categories in our dataset. Key differences between LDA and PCA are
+that:
+
+- the components of PCA capture successively less multivariate *variance* (and are are not 'supervised' by pre-defined categories)
+- the dimensions of LDA *maximise some measure of separation* between supervised categories. 
+
+In LDA, this is achieved by generating new variables (the dimensions) which are 
+linear functions of the existing variables in the dataset.
+
+To implement LDA in R, we use the \texttt{lda()} function in the **MASS** package 
+(Venables and Ripley, 2002). We specify the variables to be considered using a
+formula similar to that used for multiple regression, and we set the prior 
+(initial) probabilities of an observation being in a particular category at the 
+actual frequencies at which they occur in the data.
+
+In practice, we apply LDA to a scaled transformations of our variables (*i.e*. 
+conversion to Z-scores with mean = 0 and standard deviation = 1). This avoids 
+the variables with larger absolute values having an unbalanced effect on the 
+results.
+
+## LDA on closed whole rock major element data
+
+We will use LDA to discriminate the rock type, contained in the column
+'**Rock**' in the Hallberg dataset. The variables we will use are the major
+element oxide contents, SiO<sub>2</sub>, TiO<sub>2</sub>,
+Al<sub>2</sub>O<sub>3</sub>, Fe<sub>2</sub>O<sub>2</sub>, FeO, MnO, MgO, CaO,
+Na<sub>2</sub>O, K<sub>2</sub>O, & P<sub>2</sub>O<sub>5</sub>. We're excluding
+LOI, CO<sub>2</sub> and H<sub>2</sub>O, since these variables contain too many
+similar low values which adversely affects the matrix algebra calculation of the
+linear discriminant analysis procedure.
+
+\scriptsize
+
+```{r LDA closed whole rock data, results='hold'}
+data0 <- Hallberg
+data0[,c(11:24)] <- scale(data0[,11:24]) # scale just numeric variables
+lda_rock_clos <- lda(formula = Rock ~ SiO2 + TiO2 + Al2O3 + Fe2O3 + FeO + MnO + 
+                       MgO + CaO + Na2O + K2O + P2O5, 
+                    data = data0,
+                    prior = as.numeric(summary(Hallberg$Rock))/
+                      nrow(Hallberg)) 
+print(lda_rock_clos)
+```
+
+\scriptsize
+
+## LDA on open (CLR) whole rock major element data
+
+```{r LDA open whole rock data, message=FALSE, warning=FALSE, results='hold'}
+data0 <- Hallberg_clr
+data0[,11:24] <- scale(data0[,11:24]) # scale just numeric variables
+lda_rock_open <- lda(formula = Rock ~ SiO2 + TiO2 + Al2O3 + Fe2O3 + FeO + MnO + 
+                       MgO + CaO + Na2O + K2O + P2O5, 
+                    data = data0,
+                    prior = as.numeric(summary(data0$Rock))/nrow(data0)) 
+print(lda_rock_open)
+```
+
+```{r correl matrix CLR not used in this version, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+cormat <- rcorr.adjust(data0[,11:24], 
+                       type="pearson")
+cat("\nCorrelation matrix for predictors (not part of LDA output):\n"); print(cormat$R$r, digits = 2)
+rm(cormat)
+```
+
+\normalsize
+
+The LDA model specified and the prior probabilities are reported back to us in
+the output. The *Group means* sub-table in the output contains the centroids of
+the categories (5 classes, in our whole rock data) in the n-dimensional space
+defined by the n variables used for classification. The *Coefficients of linear*
+*discriminants* sub-table essentially defines the linear discriminant functions 
+that separate our categories, since each function (LD1, LD2, *etc*.) is a 
+linear combination of all the variables. Finally, the *Proportion of trace* 
+sub-table gives the *proportions of between-class variance* that are explained 
+by successive discriminant functions (*e.g*. for the open Hallberg rock data,
+LD1 explains 0.716 (72%) and LD2 explains 0.171 (17%) of variance between Rock 
+type categories).
+
+[**Note**: sometimes we cannot make an LDA model, because the predictors are
+collinear (highly correlated). We may be able to fix this by inspecting a 
+correlation matrix for all the predictor variables, and removing *one* variable 
+at a time from correlated pairs, then re-running the LDA procedure. By analogy 
+with multiple linear regression, this would mean a Pearson's r $\ge$ 0.8.]
+
+## Visualising LDA separation
+
+### LDA histograms
+
+We can plot the separation achieved by each linear discriminant (LD) function 
+by predicting the classification using the input data, then using the 
+\texttt{ldahist} function (Venables and Ripley 2002). To see the separation in 
+another LDA dimension, we change the subscript in the \texttt{predClos$x[,1]} 
+option. Histograms (actually drawn with custom code, enabling a plot with a
+side-by side comparison) are shown in \autoref{ldahistComp}.
+
+\scriptsize
+
+```{r lda hist compare, fig.align='center', fig.cap="\\label{ldahistComp}Histograms based on the first linear discriminant function for (a) closed and (b) open (CLR-transformed) whole-rock major element data.", fig.height=14, fig.width=10, out.width="80%", results='hold'}
+predClos <- predict(lda_rock_clos, Hallberg[,11:21])
+predOpen <- predict(lda_rock_open, Hallberg[,11:21])
+LD1c <- data.frame(Rock=as.character(Hallberg$Rock),LD1=predClos$x[,1])
+LD1c$Rock <- factor(LD1c$Rock, levels=levels(Hallberg$Rock))
+par(mfcol = c(nlevels(LD1c$Rock),2), mar = c(1,2,1,1), oma = c(1,0,1,0), 
+    mgp = c(0.75,0.2,0), tcl=0.15)
+for (i in 1:nlevels(LD1c$Rock)){
+  with(subset(LD1c, subset=LD1c$Rock==levels(LD1c$Rock)[i]),
+       hist(LD1, main = "", breaks = pretty(LD1c$LD1, n=20), col=5,
+       xlim = c(min(LD1c$LD1, na.rm=T),max(LD1c$LD1, na.rm=T))))
+  box()
+  mtext(levels(LD1c$Rock)[i],3,-1.55,adj=0.505, cex = 0.85, font = 2, col=14)
+  mtext(levels(LD1c$Rock)[i],3,-1.5, cex = 0.85, font = 2, col = 11)
+  if(i==1) mtext("(a) Closed data", 3, 0.5, font=2, cex = 1.4, col = 11)
+}
+
+LD1o <- data.frame(Rock=as.character(Hallberg$Rock),LD1=predOpen$x[,1])
+LD1o$Rock <- factor(LD1o$Rock, levels=levels(Hallberg$Rock))
+for (i in 1:nlevels(LD1o$Rock)){
+  with(subset(LD1o, subset=LD1o$Rock==levels(LD1o$Rock)[i]),
+       hist(LD1, main = "", breaks = pretty(LD1o$LD1, n=20), col=4,
+            xlim = c(min(LD1o$LD1, na.rm=T),max(LD1o$LD1, na.rm=T))))
+  box()
+  mtext(levels(LD1o$Rock)[i],3,-1.55, adj=0.505, cex = 0.85, font = 2, col=14)
+  mtext(levels(LD1o$Rock)[i],3,-1.5, cex = 0.85, font = 2, col = 2)
+  if(i==1) mtext("(b) Open data", 3, 0.5, font=2, cex = 1.4, col = 2)
+}
+```
+
+\normalsize
+
+The sets of histograms for closed and open data in \autoref{ldahistComp} both
+show some separation of categories, but with overlap. Of course this only shows
+the separation in one dimension, and two or more dimensions may be needed to
+achieve clear separation. We will make plots showing more than one LDA dimension
+later.
+
+### Partition plots
+
+Another potentially useful way of showing separation of groups in LDA is to use
+a *partition plot*, accessible using the \texttt{partimat()} function from the
+**klaR** R package (Weihs et al. 2005).
+
+\scriptsize
+
+```{r pplot comparison, fig.height=5, fig.width=10, fig.align='center', out.width="100%", fig.cap="\\label{pplotComp}Partition plots for (a) closed and (b) open (CLR-transformed) whole rock major element data, based on the SiO2 and TiO2 contents. Filled symbols are means in each category, with red letters showing apparently mis-classified observations.", results='hold'}
+require(klaR)
+par(mfrow = c(1,2),mar = c(3,3,1,1), mgp= c(1.3,0.2,0), tcl=0.2, font.lab=2)
+with(Hallberg, 
+     drawparti(Rock, SiO2, TiO2, method="lda",image.colors = c(10,7,14,13,2:5),
+               xlab = expression(bold(paste(SiO[2]," (%)"))), 
+               ylab = expression(bold(paste(TiO[2]," (%)"))))
+     )
+mtext("(a)", 3, -1.5, adj=0.05, font=2, cex = 1.2)
+with(Hallberg_clr, 
+     drawparti(Rock, SiO2, TiO2, method="lda",image.colors = c(10,7,14,13,2:5),
+               xlab = expression(bold(paste(SiO[2]," (CLR-transformed)"))), 
+               ylab = expression(bold(paste(TiO[2]," (CLR-transformed)"))))
+     )
+mtext("(b)", 3, -1.5, adj=0.95, font=2, cex = 1.2)
+```
+
+\normalsize
+
+Partition plots, such as those  in \autoref{pplotComp}, are presented for single
+pairwise combinations of the variables (in this example SiO<sub>2</sub> and
+TiO<sub>2</sub>) used to make the LDA model. We can make differnt plots by
+specifying different variables in the \texttt{drawparti()} function. Each such plot
+can be considered to be a different view of the data (which of course has 
+multiple dimensions). Colored regions delineate each classification area. Any
+observation that falls within a region is predicted to be from a specific
+category, with apparent mis-classification in a different color (but we usually 
+need more than two dimensions for correct classification). Each plot also
+includes the apparent error rate for that view of the data.
+
+## Scatter Plots resembling biplots
+
+Scatter-plots showing each variable and observation in linear discriminant
+dimensions, and grouped by category, are useful for visual assessment of how
+well the LDA model separates the observations.
+
+\scriptsize
+
+```{r plot LDA closed, fig.height=8, fig.width=8, fig.align='center', out.width="80%", fig.cap="\\label{LDAclos}Linear discriminant analysis (LDA) plots for closed rock composition data: (a) variable coefficients in LD1-LD2 space, and predictions for observations in (b) LD1-LD2 space; (c) LD1-LD3 space; (d) LS2-LD4 space. Legend in (a) applies to plots in (b), (c), and (d).", results='hold'}
+par(mfrow = c(2,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_rock_clos$scaling[,1], lda_rock_clos$scaling[,2],
+     xlim = c(-4,1), ylim=c(-0.8,1.4), 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+     main="(a) Variable Coefficients [LD1, LD2]")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+text(lda_rock_clos$scaling[,1],lda_rock_clos$scaling[,2],
+     labels=names(Hallberg)[11:21], pos = c(3,1,1,4),
+     cex = 0.95, col = 2, offset = 0.2)
+mtext("(a)", 3, -1.5, adj = 0.45, cex = 1.2, font = 2)
+
+ldaPred_rock_clos <- predict(lda_rock_clos)
+
+for(i in 1:NROW(lda_rock_clos$scaling)){
+  arrows(0,0,lda_rock_clos$scaling[i,1],lda_rock_clos$scaling[i,2],
+         length = 0.1, col = 7)
+}
+legend("bottomleft",legend=levels(Hallberg$Rock), ncol = 1, bty="n", 
+       inset=0.01, col=c(1:3,6,8,9,11,12), pch=c(0:7), pt.lwd = 2,
+    title="Rock Type in (b) - (d)", pt.cex = 1.5, cex = 1.1, y.intersp = 1)
+
+plot(ldaPred_rock_clos$x[,1], ldaPred_rock_clos$x[,2],
+     col=c(1:3,6,8,9,11,12)[Hallberg_clr$Rock],
+     pch=c(0:7)[Hallberg_clr$Rock], lwd = 2, cex = 1.5, 
+  xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+  main="Predictions for Observations [LD1, LD2]")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+# text(ldaPred_rock_clos$x[,1], ldaPred_rock_clos$x[,2], 
+#      labels=as.character(Hallberg$Rock), col=c(2,4,6,3,12)[Hallberg$Rock],
+#      pos=1, offset=0.15, cex=0.65)
+# legend("bottomright",legend=levels(Hallberg$Rock)[6:13],
+#        ncol = 2, col=c(6:13), pch=c(5:12), pt.lwd = 2,
+#        title=expression(bold("Rock Type")),
+#        bty="n", inset=0.01, 
+#        pt.cex=c(1.8,1.8,2,2,1.3), cex=0.9)
+mtext("(b)", 3, -1.5, adj = 0.95, cex = 1.2, font = 2)
+
+plot(ldaPred_rock_clos$x[,1], ldaPred_rock_clos$x[,3], 
+     col=c(1:3,6,8,9,11,12)[Hallberg_clr$Rock],
+     pch=c(0:7)[Hallberg_clr$Rock], lwd = 2, cex = 1.5, 
+  xlab="Linear Discriminant [1]", ylab="Linear Discriminant [3]", 
+  main="Predictions for Observations [LD1, LD3]")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+# text(ldaPred_rock_clos$x[,1], ldaPred_rock_clos$x[,3], 
+#      labels=Hallberg$Rock, col=c(1:13)[Hallberg$Rock],
+#      pos=1, offset=0.15, cex=0.65)
+mtext("(c)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+
+plot(ldaPred_rock_clos$x[,2], ldaPred_rock_clos$x[,4],
+     col=c(1:3,6,8,9,11,12)[Hallberg_clr$Rock],
+     pch=c(0:7)[Hallberg_clr$Rock], lwd = 2, cex = 1.5, 
+  xlab="Linear Discriminant [2]", ylab="Linear Discriminant [4]", 
+  main="Predictions for Observations [LD2, LD4]")
+abline(v=0,col="grey",lty=2)
+abline(h=0,col="grey",lty=2)
+# text(ldaPred_rock_clos$x[,2], ldaPred_rock_clos$x[,4], 
+#      labels=Hallberg$Rock, col=c(2,4,6,3,12)[Hallberg$Rock],
+#      pos=1, offset=0.15, cex=0.65)
+mtext("(d)", 3, -1.5, adj = 0.55, cex = 1.2, font = 2)
+```
+
+```{r plot LDA open, fig.height=8, fig.width=8, out.width="70%", fig.align='center', fig.cap="\\label{LDAopen}Linear discriminant analysis (LDA) plots for open (CLR-transformed) rock composition data: (a) variable coefficients in LD1-LD2 space, and predictions for observations in (b) LD1-LD2 space; (c) LD1-LD3 space; (d) LS2-LD3 space. Legend in (a) applies to plots (b), (c), and (d).", results='hold'}
+par(mfrow = c(2,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+plot(lda_rock_open$scaling[,1], lda_rock_open$scaling[,2], 
+     xlim = c(-1,2.5),  ylim = c(-1.3,1.3), 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+     main="Variable Coefficients [LD1, LD2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+text(lda_rock_open$scaling[,1], lda_rock_open$scaling[,2], 
+     labels=names(Hallberg_clr)[11:21],
+     pos = 1, cex = 0.9, col = 2, offset=0.2)
+for(i in 1:NROW(lda_rock_open$scaling)){
+  arrows(0,0,lda_rock_open$scaling[i,1],lda_rock_open$scaling[i,2],
+         length = 0.1, col = 7) }
+mtext("(a)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+legend("bottomright", ncol = 1, legend=levels(Hallberg$Rock), 
+       col=c(1:3,6,8,9,11,12), pch=c(0:7), pt.lwd = 2,
+       bty="n", box.col="grey90", y.intersp = 1, 
+       title="Rock Type in (b) - (d)",
+       box.lwd=2, inset=0.02, pt.cex=1.5, cex=1.1)
+
+ldaPred_rock_open <- predict(lda_rock_open)
+
+plot(ldaPred_rock_open$x[,1], ldaPred_rock_open$x[,2], 
+     col=c(1:3,6,8,9,11,12)[Hallberg$Rock],
+     pch=c(0:7)[Hallberg$Rock], lwd=2, 
+     cex = 1.5, 
+     main="Predictions for Observations [LD1, LD2]", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+# text(ldaPred_rock_open$x[,1], ldaPred_rock_open$x[,2], labels=Hallberg$Rock, 
+#      col=c(2,4,6,3,12)[Hallberg$Rock], pos=1, offset=0.15, cex=0.65)
+mtext("(b)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+
+plot(ldaPred_rock_open$x[,1], ldaPred_rock_open$x[,3], 
+     col=c(1:3,6,8,9,11,12)[Hallberg$Rock],
+     pch=c(0:7)[Hallberg$Rock], lwd=2, 
+     cex = 1.5, 
+     main="Predictions for Observations [LD1, LD3]", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [3]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+# text(ldaPred_rock_open$x[,1], ldaPred_rock_open$x[,3], labels=Hallberg$Rock, 
+#      col=c(2,4,6,3,12)[Hallberg$Rock], pos=1, offset=0.15, cex=0.65)
+mtext("(c)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+
+plot(ldaPred_rock_open$x[,2], ldaPred_rock_open$x[,4], 
+     col=c(1:3,6,8,9,11,12)[Hallberg$Rock],
+     pch=c(0:7)[Hallberg$Rock], lwd=2, 
+     cex = 1.5, 
+     main="Predictions for Observations [LD2, LD4]", 
+     xlab="Linear Discriminant [2]", ylab="Linear Discriminant [4]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+# text(ldaPred_rock_open$x[,2], ldaPred_rock_open$x[,3], labels=Hallberg$Rock, 
+#      col=c(2,4,6,3,12)[Hallberg$Rock], pos=1, offset=0.15, cex=0.65)
+mtext("(d)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+```
+
+```{r reset par to 1x1, message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+par(mfrow=c(1,1))
+```
+
+\normalsize
+
+From the plots in \autoref{LDAclos} and \autoref{LDAopen}, we can see that the
+LDA models obtained are cetainly able to separate observations by the selected
+factor. Firstly, however, there is a lot of clustering of the predictor
+variables in \autoref{LDAclos}(a), which may relate to spurious relationships
+between variables caused by compositional closure. This clustering is not so
+pronounced in \autoref{LDAopen}(a), since the closure has been removed by
+CLR-transformation.
+
+Out of the combinations of LDA dimensions selected, the best separation is with
+LD2 *vs*. LD1, which is not surprising since these dimensions together account
+for about 95% of the between-groups variance -- for both closed and open data.
+There is a lot of apparent overlap, but we can not see the true separation in
+only 2 dimensions. The LDA performed on open data may result in slightly clearer
+separation of samples by Rock category than LDA using closed data, but without a
+multidimensional view this is also hard to be sure about.
+
+One way that we can get a better idea about the usefulness of our classification
+models is to perform some validation. This involves 'training' the model on a
+subset of our data, and trying to predict the category of a different subset
+using the training model. A later session will look at some ways we can do
+this.

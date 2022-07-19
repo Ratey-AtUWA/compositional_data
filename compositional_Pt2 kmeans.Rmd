@@ -1,0 +1,321 @@
+---
+documentclass: article
+classoption: a4paper
+geometry: margin=0.6in
+output: 
+  pdf_document: 
+    fig_caption: TRUE
+    number_sections: TRUE
+    toc: no
+    highlight: tango
+  html_document: 
+    fig_caption: true
+    number_sections: yes
+    self_contained: no
+  word_document: 
+    toc_depth: 2
+    fig_caption: yes
+fontsize: 12pt
+header-includes:
+  \usepackage{sourcesanspro}
+  \usepackage[T1]{fontenc}
+  \renewcommand{\familydefault}{\sfdefault}
+  \renewcommand{\thefigure}{2.\arabic{figure}}
+  \renewcommand{\thetable}{2.\arabic{table}}
+---
+
+\setcounter{section}{1}
+
+```{r load knitr, include=FALSE}
+library(flextable)
+library(magrittr)
+library(png)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+
+addImg <- function(obj, x = NULL, y = NULL, width = NULL, interpolate = TRUE){
+  if(is.null(x) | is.null(y) | is.null(width)){stop("Must provide args 'x', 'y', and 'width'")}
+  USR <- par()$usr ; PIN <- par()$pin ; DIM <- dim(obj) ; ARp <- DIM[1]/DIM[2]
+  WIDi <- width/(USR[2]-USR[1])*PIN[1] ;   HEIi <- WIDi * ARp 
+  HEIu <- HEIi/PIN[2]*(USR[4]-USR[3]) 
+  rasterImage(image = obj, xleft = x-(width/2), xright = x+(width/2),
+            ybottom = y-(HEIu/2), ytop = y+(HEIu/2), interpolate = interpolate)
+}
+```
+
+```{r page 1 header hide code, fig.height=1.5, fig.width=10, echo=FALSE, out.width="100%", fig.align='right', results='hold'}
+logo <- readPNG("UWA logo_text_V_wsL.png")
+par(mar = c(0,0,0,0))
+layout(matrix(c(1,1,1,1,2),nrow = 1))
+
+plot(c(0,1),c(0,1), axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+text(-0.025,0.9, pos = 4, cex = 2.6, font = 2, 
+     labels="ENVTM501 Data Analysis in R for Compositional Data")
+text(-0.025,0.6, pos = 4, cex = 2.2, 
+     labels="Multivariate analyses on cities land-use compositional data")
+text(-0.025,0.4, pos = 4, font = 3, cex = 1.4, col = 12,
+     labels="Land use proportional area data for 40 cities on Earth")
+text(1,0.1, pos = 2, font = 3, family = 'serif', cex = 1.5, col = 2,
+     labels="Andrew Rate, School of Agriculture and Environment")
+plot(1,1, axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+addImg(logo, x = 1.2, y = 1, width = 0.5)
+par(mar = c(3.5,3.5,0.5,0.5))
+```
+
+```{r load packages etc., message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(ggplot2)
+library(reshape2)
+library(ggpubr)
+library(flextable)
+library(magrittr)
+
+set_flextable_defaults(theme_fun = "theme_zebra", font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+palette(c("black","blue","green4","red2","purple","darkcyan",
+          "firebrick","grey","grey40","white","transparent"))
+```
+
+```{r read file and show data, include=FALSE, results='hide'}
+cities <- read.csv("cities_Hu_etal_2021.csv", stringsAsFactors = TRUE)
+cities$City <- as.character(cities$City)
+```
+
+```{r make new Type factor with abbreviated names, include=FALSE, results='hide'}
+row.names(cities) <- as.character(cities$City)
+cities$sType <- as.character(cities$Type)
+cities$sType <- gsub("Compact-Open","CO",cities$sType)
+cities$sType <- gsub("Open-Lightweight","OL",cities$sType)
+cities$sType <- gsub("Compact","C",cities$sType)
+cities$sType <- gsub("Open","O",cities$sType)
+cities$sType <- gsub("Industrial","I",cities$sType)
+cities$sType <- as.factor(cities$sType)
+```
+
+```{r clr-tranform data, include=FALSE, results='hide'}
+cities_clr <- cities
+cities_clr[,c("Compact","Open","Lightweight","Industry")] <- 
+  clr(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+names(cities);cat("\n");names(cities_clr)
+```
+
+We are using the same cities land-use dataset from the previous session, from Hu
+*et al*. (2021).
+
+# K-means clustering
+
+K-means clustering is an unsupervised classification method, which is a type of
+machine learning used when you don't know (or don't want to make assumptions
+about) any categories or groups. We do have groupings in our data, which are the
+factors **Type**, **Global**, and **Region**.
+
+The goal of the K-means clustering algorithm is to find a specified number (*K*)
+groups based on the data. The algorithm first requires an estimate of the number
+of clusters, and there are several ways to do this. The code below from the
+factoextra R package tests different values of *K* and computes the 'total
+within sum of squares' (WSS) based on the distance of observations from the
+'centroid' (mean) of each cluster, which itself is found by an iterative
+procedure. When the decrease in WSS from *K* to *K*+1 is minimal, the algorithm
+selects that value of *K*.
+
+\scriptsize
+
+```{r assess optimum clusters for closed and open data, fig.height=3, fig.width=7.2, out.width='75%', fig.align='center', fig.cap="\\label{nClustComp}Estmation of the optimum number of clusters for (a) compositionally closed and (b) open (CLR-transformed) urban land-use data.", results='hold'}
+#
+require(factoextra)
+data0 <- na.omit(cities[,c("Compact","Open","Lightweight","Industry")])
+nclus_clos <- fviz_nbclust(data0, kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2) +
+  labs(title="")
+#   geom_vline(xintercept = 4, linetype = 2) +
+data0 <- na.omit(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+nclus_clr <- fviz_nbclust(data0, kmeans, method = "wss") +
+  geom_vline(xintercept = 5, linetype = 2) +
+  labs(title="")
+ggarrange(nclus_clos,nclus_clr,ncol = 2,nrow = 1, 
+          labels = c("(a) closed","(b) open (clr)"))
+```
+
+\normalsize
+
+We have indicated, in \autoref{nClustComp}, different numbers of clusters for
+closed and open data, based on visual identification of a break in the slope of
+the WSS *vs*. 'Number of clusters' curve. In the following analyses we will 
+assume the same number of clusters (*K* = 4) for both open and closed data.
+
+## Compute K-means clustering for closed data
+
+\scriptsize
+
+```{r kmeans closed, results='hold'}
+data0 <- na.omit(cities[,c("sType","Compact","Open","Lightweight","Industry")])
+data0[,c("Compact","Open","Lightweight","Industry")] <- 
+  scale(data0[,c("Compact","Open","Lightweight","Industry")])
+set.seed(123)
+cities_clos_kmeans <- kmeans(data0[,2:NCOL(data0)], 4, nstart = 25)
+cat("components of output object are:\n")
+ls(cities_clos_kmeans)
+cat("\nK-means clustering with",length(cities_clos_kmeans$size),
+    "clusters of sizes",cities_clos_kmeans$size,"\n\n")
+cat("Cluster centers (scaled to z-scores) in K-dimensional space:\n")
+cities_clos_kmeans$centers
+```
+\normalsize
+
+```{r echo=FALSE, tab.cap="Cities in each K-means cluster from analysis of compsitionally closed data.", results='hold'}
+outtable <- data.frame(Cluster = seq(1,length(cities_clos_kmeans$size),1),
+                       Cities = rep("nil",length(cities_clos_kmeans$size)))
+for (i in 1:length(cities_clos_kmeans$size)){
+  outtable[i,1] <- paste("Cluster",i)
+  outtable[i,2] <- paste(names(which(cities_clos_kmeans$cluster==i)), 
+                         collapse = " ")}
+ft <- flextable(outtable)
+ft <- theme_zebra(ft,odd_header = "#D0E0FF")
+ft <- width(ft, j=1:2, width=c(2,5), unit = "in")
+ft <- border_inner_h(ft, border=BorderDk, part = "all")
+ft <- border_outer(ft, border=BorderDk, part = "all")
+ft %>% border_inner_v(border=BorderLt, part="all")
+```
+
+The output object from the kmeans function is a list which contains the
+information we're interested in: the sum-of-squares between and within clusters
+(betweenss, tot.withinss, totss, withinss), the location in *K* dimensions of
+the centers of the clusters (centers), the assignment of each observation to a
+cluster (cluster), the number of observations in each cluster (size), and the
+number of iterations taken to find the solution (iter).
+
+Applying K-means clustering with 4 clusters to the **closed** cities land-use
+data results in one larger cluster of 25 cities (3) with three smaller clusters
+containing 4-6 cities (1,2, and 4). From the table of cluster centers, we get
+some idea that:
+
+- Cluster 1 cities have greater proportions of Lightweight land use
+- Cluster 2 cities have greater proportions of Compact land use
+- Cluster 3 cities have similar proportions of all land uses
+- Cluster 4 cities have greater proportions of Open land use
+
+Interestingly, Lightweight land use does not discriminate between Clusters 2-4,
+since the values of cluster centers 2-4 are the same in the Lightweight
+dimension.
+
+\scriptsize
+
+## Compute K-means clustering for open data
+
+```{r kmeans open, results='hold'}
+data0 <- na.omit(cities_clr[,c("sType","Compact","Open","Lightweight","Industry")])
+data0[,c("Compact","Open","Lightweight","Industry")] <- 
+  scale(data0[,c("Compact","Open","Lightweight","Industry")])
+set.seed(123)
+cities_open_kmeans <- kmeans(data0[,2:NCOL(data0)], 4, nstart = 25)
+cat("components of output object are:\n")
+ls(cities_open_kmeans)
+cat("\nK-means clustering with",length(cities_open_kmeans$size),
+    "clusters of sizes",cities_open_kmeans$size,"\n\n")
+cat("Cluster centers (scaled to z-scores) in K-dimensional space:\n")
+cities_open_kmeans$centers
+outtable <- data.frame(Cluster = seq(1,length(cities_open_kmeans$size),1),
+                       Cities = rep("nil",length(cities_open_kmeans$size)))
+```
+\normalsize
+
+```{r echo=FALSE, tab.cap="Cities in each K-means cluster from analysis of data with compositional closure removed by centered log ratio transformation.", results='hold'}
+for (i in 1:length(cities_open_kmeans$size)){
+  outtable[i,1] <- paste("Cluster",i)
+  outtable[i,2] <- paste(names(which(cities_open_kmeans$cluster==i)), 
+                         collapse = " ")}
+ft <- flextable(outtable)
+ft <- theme_zebra(ft,odd_header = "#D0E0FF")
+ft <- width(ft, j=1:2, width=c(2,5), unit = "in")
+ft <- border_outer(ft, border=BorderDk, part = "all")
+ft %>% border_inner_v(border=BorderLt, part="all")
+```
+
+Applying K-means clustering with 4 clusters to the **open** cities land-use data
+results in one larger cluster of 25 cities (Cluster 4 - not the same cities as
+the cluster of 25 from analyusis of closed data!). There are three smaller
+clusters containing 1-10 cities (1-3). From the table of cluster centers, we get
+might conclude that:
+
+- The Cluster 1 city has greater Industry, and lower Compact, land use
+- 10 Cluster 2 cities have greater Compact, and lower Open, land uses
+- 4 Cluster 3 cities have greater Lightweight, and lower Industry land uses
+- 25 Cluster 4 cities have somewhat greater Open land use
+
+An interesting question to ask is whether the clusters are similar to the
+categories we already have in the dataset (Type, Global, and Region). The
+following plot includes labelling to help us see the relationship of K-means
+clusters to the Type category.
+
+\normalsize
+
+To represent clustering in 3 or more dimensions in a plot, we can use principal
+components to reduce the number of dimensions, but still retain information from
+all the variables. This is done very nicely by the **fviz_cluster()** function
+from the R package **factoextra** (Kassambara and Mundt, 2020). The output from
+fviz_cluster is a ggplot, so for more efficient presentation and comparison, we
+save the ggplot2 output to objects, and plot these together using the
+ggarrange() function from the ggpubr R package.
+
+## Plot kmeans clusters for closed and open data
+
+\scriptsize
+
+```{r visualize kmeans clusters compared, fig.align='center', fig.cap="\\label{kmeansComp}K-means cluster plots comparing (a) closed and (b) CLR-transformed (opened) urban land-use data.", fig.height=5, fig.width=10, message=FALSE, warning=FALSE, out.width='100%', results='hold'}
+row.names(data0) <- paste0(data0$sType,seq(1,NROW(data0)))
+kmeans_viz_clos <- fviz_cluster(cities_clos_kmeans, data = data0[,2:NCOL(data0)],
+             palette = c("#800000", "#E7B800", "#FC4E07","purple2"),
+             labelsize=10, main = "",
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal())
+kmeans_viz_open <- fviz_cluster(cities_open_kmeans, data = data0[,2:NCOL(data0)],
+             palette = c("#800000", "#E7B800", "#FC4E07","purple2"),
+             labelsize=10, main = "",
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = F, # if true avoids label overplotting (slow)
+             ggtheme = theme_minimal())
+ggarrange(kmeans_viz_clos,kmeans_viz_open,ncol = 2,
+          labels = c("(a) closed","(b) open (clr)"))
+```
+
+\normalsize
+
+From the plots in \autoref{kmeansComp} we can see that, for both the closed and
+open cities land use data, K-means clustering did not produce clusters that
+overlap convincingly with the city Type category in our data. There is some
+differentiation; for example in both cases there is a cluster (cluster 1 for
+closed data, cluster 3 for open data) composed only of Open-Lightweight (OL)
+cities. It's also clear that removing compositional closure in the data makes a
+difference to both the size of the resulting K-means cluster and their
+composition (in terms of cities belonging to each cluster). We haven't checked
+the relationship of the other categories (Global, Region) to the clusters
+obtained, but some editing of the code would answer this question for us!
+
+## References and R Packages
+
+Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X. (2021). Land consumption in cities: A comparative study across the globe. *Cities*, **113**: 103163, <https://doi.org/10.1016/j.cities.2021.103163>.
+
+Kassambara, A. and Mundt, F. (2020). *factoextra: Extract and Visualize the Results of Multivariate Data Analyses*. R package version 1.0.7. <https://CRAN.R-project.org/package=factoextra>
+
+Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., Hornik, K.(2021). *cluster: Cluster Analysis Basics and Extensions*. R package version 2.1.2. <https://CRAN.R-project.org/package=cluster>
+
+Reimann, C., Filzmoser, P., Garrett, R. G., & Dutter, R. (2008). *Statistical Data Analysis Explained: Applied Environmental Statistics with R* (First ed.). John Wiley & Sons, Chichester, UK.
+
+Venables, W. N. & Ripley, B. D. (2002) *Modern Applied Statistics with S* (**MASS**). Fourth Edition. Springer, New York. ISBN 0-387-95457-0. <http://www.stats.ox.ac.uk/pub/MASS4/>
+
+Wickham, H. (2019). *stringr: Simple, Consistent Wrappers for Common String Operations*. R package version 1.4.0. <https://CRAN.R-project.org/package=stringr>
