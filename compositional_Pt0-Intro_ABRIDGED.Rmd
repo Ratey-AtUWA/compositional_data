@@ -1,0 +1,261 @@
+---
+output: 
+  html_document: 
+    toc_depth: 2
+    fig_caption: yes
+    number_sections: yes
+    self_contained: no
+---
+
+```{r initial settings, include=FALSE}
+library(flextable)
+library(magrittr)
+library(png)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+addImg <- function(obj, x = NULL, y = NULL, width = NULL, interpolate = TRUE){
+  if(is.null(x) | is.null(y) | is.null(width)){stop("Must provide args 'x', 'y', and 'width'")}
+  USR <- par()$usr ; PIN <- par()$pin ; DIM <- dim(obj) ; ARp <- DIM[1]/DIM[2]
+  WIDi <- width/(USR[2]-USR[1])*PIN[1] ;   HEIi <- WIDi * ARp 
+  HEIu <- HEIi/PIN[2]*(USR[4]-USR[3]) 
+  rasterImage(image = obj, xleft = x-(width/2), xright = x+(width/2),
+            ybottom = y-(HEIu/2), ytop = y+(HEIu/2), interpolate = interpolate)
+}
+```
+
+In this UWA Micro-Credential course, you will learn specialised methods which
+allow you to analyse compositional data so that results can be interpreted with
+confidence. Students will also gain skills in use of R for relevant multivariate
+data analyses.
+
+First we load the packages we need, and set a preferred colour palette.
+
+```{r load packages etc., message=FALSE, warning=FALSE, results='hide'}
+library(corrplot)
+library(RcmdrMisc)
+library(rgr)
+library(car)
+library(cluster)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+```
+
+## Load the cities data
+
+**Data are from**: Fig. 11 *in* Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X., 2021. Land consumption in cities: A comparative study across the globe. *Cities*, **113**: 103163, <https://doi.org/10.1016/j.cities.2021.103163>. (digitised from figure using <https://automeris.io/WebPlotDigitizer/>)
+
+After reading the data we make a column containing abbreviated codes for the
+land-use type factor, using the **gsub()** function to substitute character
+strings.
+
+```{r read file and show data, results='hold'}
+cities <- 
+  read.csv(paste0("https://raw.githubusercontent.com/Ratey-AtUWA/",
+                  "compositional_data/main/cities_Hu_etal_2021.csv"), 
+           stringsAsFactors = TRUE)
+ft <- flextable(cities)
+ft <- add_header_row(ft, values = c("","Land use categories","City categories"),
+                     colwidths = c(1,4,3))
+ft <- set_caption(ft, caption = "Cities land use data used in this document, showing cities 
+      categorized by land-use Type, Global socioeconomic zone, and geographic Region.")
+ft <- theme_zebra(ft,odd_header = "#D0E0FF", even_header = "#D0E0FF")
+ft <- align(ft,align = "center", part = "header")
+ft <- height_all(ft, height=0.39, unit = "cm"); ft <- hrule(ft, rule = "exact")
+ft <- width(ft, j=1:8, width=c(2.7,1.5,1.5,1.8,1.5,3,2,3), unit = "cm")
+ft <- border_outer(ft, border = BorderDk, part = "all")
+ft %>% border_inner_v(border=BorderLt, part="header")
+```
+
+The original data categorised the cities by **Type**, based on the land use
+categories occupying the greatest proportion(s) of urban area. We have added two
+other categories, **Global** identifying each city as being in the socioeconomic
+"global south" or "global north" zones, and also assigning each city to a
+geographic **Region**, a category having eight levels. All categories are stored
+as factors in the R data frame.
+
+```{r make new Type factor with abbreviated names, results='hide', echo=FALSE}
+row.names(cities) <- as.character(cities$City)
+cities$sType <- as.character(cities$Type)
+cities$sType <- gsub("Compact-Open","CO",cities$sType)
+cities$sType <- gsub("Open-Lightweight","OL",cities$sType)
+cities$sType <- gsub("Compact","C",cities$sType)
+cities$sType <- gsub("Open","O",cities$sType)
+cities$sType <- gsub("Industrial","I",cities$sType)
+cities$sType <- as.factor(cities$sType)
+```
+
+## Make CLR-transformed dataset
+
+```{r clr-transform data, paged.print=FALSE, results='hold'}
+cities_clr <- cities
+cities_clr[,c("Compact","Open","Lightweight","Industry")] <- 
+  clr(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+head(cities_clr[,1:8])
+```
+
+## Compare correlation matrices
+
+```{r correlation matrix comnparison, fig.height=3.6, fig.width=7.2, out.width="70%", fig.align='center', fig.cap="\\label{corrmats}Correlation matrices for (a) closed, and (b) open (CLR-transformed) variables (code is not shown).", results='hold',echo=FALSE}
+par(mar=c(1,5,5,3), mfrow=c(1,2), mgp=c(1.5,0.2,0), xpd=T)
+cormat <- round(cor(cities[,c("Compact","Open",
+                              "Lightweight","Industry")]),2)
+corrplot(cormat, method="ellipse", cl.ratio = 0.25,
+         addCoef.col = "black", tl.col = "grey33", cl.pos = "b")
+mtext("(a)",3,1,adj=0.1)
+cormat <- round(cor(cities_clr[,c("Compact","Open",
+                                  "Lightweight","Industry")]),2)
+corrplot(cormat, method="ellipse", cl.ratio = 0.25,
+         addCoef.col = "black", tl.col = "navy", cl.pos = "b")
+mtext("(b)",3,1,adj=0.1)
+par(mfrow=c(1,1), mar = c(4,4,1,1))
+```
+
+By comparing Fig.1(a) and Fig.1(b), we can already see that addressing closure
+with the centered-logratio (CLR) transformation changes the interpretation of
+relationships between the variables.
+
+## Some other things to try
+
+- comparing the distributions of untransformed and CLR-transformed pairs of variables using histograms or density plots
+- comparing scatter plots of untransformed and CLR-transformed pairs of variables (maybe using the **scatterplotMatrix()** function in the **car** package).
+
+# Principal components analysis
+
+It is quite common to measure many variables in environmental science and other
+disciplines. Using various types of *ordination analysis*, we can use the
+information contained in multiple variables to create a reduced subset of
+variables containing nearly the same amount of information. Ordination methods
+are also referred to, for this reason, as 'data reduction' methods and are
+commonly used for multivariate analysis.
+
+One of the earliest and most widely used ordination methods for exploration and
+dimension-reduction of multivariate data is **principal components analysis**
+(PCA). Imagine a dataset with many samples (rows) and n continuous numeric
+variables (columns) which contain quantitative information about each sample
+such as concentrations, heights, velocities, *etc*. For these *n*
+variables/dimensions, the principal component calculation generates *n* new
+variables, or principal components, which are each a function of the set of all
+the original variables (so each principal component is defined by a weighting or
+coefficient for each of the original variables). We may choose to omit some
+variables from the analysis if they contain too many missing observations or if
+there is another valid reason to doubt their integrity. Since each principal
+component is selected to account for successively smaller proportions of the
+multiple variance, it is usually the first few principal components which
+explain most of the variance and therefore contain the most useful information.
+We conventionally visualize this in a 'scree plot' (Fig.2), a kind of bar graph
+showing the decrease in variance accounted for by each component.
+
+```{r run and summarise PCA, results='hold'}
+#
+data0 <- na.omit(cities[,c("Compact","Open","Lightweight","Industry")])
+pca_cities_clos <- prcomp(data0, scale. = TRUE)
+cat("Variable weightings (rotations) - closed data\n")
+pca_cities_clos$rot
+cat("...\n\nComponent Variances - Closed data\n")
+pca_cities_clos$sdev^2
+cat("...\n\nProportions of variance explained by each component",
+    "\nCLR-transformed (open) data\n")
+round(pca_cities_clos$sdev^2/sum(pca_cities_clos$sdev^2),3)
+cat("\n--------------------\nVariable weightings (rotations) - open data\n")
+
+data0 <- na.omit(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+pca_cities_open <- prcomp(data0, scale. = TRUE)
+pca_cities_open$rot
+cat("...\n\nComponent Variances - CLR-transformed (open) data\n")
+pca_cities_open$sdev^2
+cat("...\n\nProportions of variance explained by each component",
+    "\nCLR-transformed (open) data\n")
+round(pca_cities_open$sdev^2/sum(pca_cities_open$sdev^2),3)
+rm(data0)
+```
+
+## Principal Components Analysis output
+
+As well as the component variances, the useful results of principal components
+analysis include the variable weightings or 'rotations' for each principal
+component. Referring to just the output for **open data** above, PC1 (which
+explains the most multivariate variance) has its greatest absolute contributions
+from the Lightweight and Industry variables, which act in opposite directions
+(remembering that the sign is arbitrary, but that *relative* sign and magnitude
+are important). PC2 contains mainly variance from the Compact and Open
+variables, PC3 (which explains much less variance) reflects Open/Industry, and
+we can ignore PC4 as it has a negligible component variance.
+
+In addition, every individual observation (sample) is a multivariate point, the
+observation scores for all samples in each principal component based on the
+values of the variables used in PCA for that sample. It is conventional to plot
+both of these two types of output in a principal component **biplot**. Before
+discussing the biplot, we should note that the sign (positive or negative) of
+variable weightings and observation scores (*i.e*. the direction of the axes) is
+arbitrary and should not affect our interpretations.
+
+```{r scree plots, echo=FALSE, fig.height=2.5, fig.width=6, message=FALSE, warning=FALSE, out.width='60%', fig.align='center', fig.cap="\\label{screeplots}PCA scree plots for urban land-use data, for: (a) compositionally closed proportions; (b) data corrected for closure using CLR-transformation.", results='hold'}
+par(mar = c(3.,3.5,1.2,1), mfrow = c(1,2), mgp=c(2,0.8,0), font.lab=2)
+plot(pca_cities_clos, main = "(a) closed", cex.main = 1, col = 5)
+axis(1, at=seq(0.8,4.2,l=4), labels=seq(1,4,1), tcl=0.01, col=15, mgp=c(0.5,0.1,0))
+mtext("Component", side = 1, line = 1.15, font = 2)
+plot(pca_cities_open, main = "(b) open (CLR)", cex.main = 1, col = 4)
+axis(1, at=seq(0.8,4.2,l=4), labels=seq(1,4,1), tcl=0.01, col=15, mgp=c(0.5,0.1,0))
+mtext("Component", side = 1, line = 1.15, font = 2)
+par(mar = c(3.5,3.5,1,1), mfrow = c(1,2), mgp=c(1.7,0.3,0))
+```
+
+There are informal 'rules' for deciding which of the principal components 
+contain useful information:
+
+1. Components having variance greater than 1 (the 'Kaiser' criterion)
+2. Components up to a cumulative proportion of variance explained of 0.8 (80%)
+
+For example, for the open data, the component variances are PC1 1.976, PC2
+1.511, PC3 0.513, PC4 1.5E-31 -- so only PC1 and PC2 meet the first criterion.
+Similarly, the *cumulative* proportions of variance explained by each component
+are PC1 0.494, PC1+PC2 0.872, so by criterion 2 no useful information is
+contained in principal components >2. In this example both criteria agree (they
+don't always!).
+
+Another part of the PCA output that we need to know about is the set of
+*observation scores*, essentially showing where each observation (each city, in
+these data) plots in principal component space. We're only interested in PC1 and
+PC2, since they are the only components meeting the criteria. The observation
+scores for the first rows of the data are in the Table below:
+
+```{r table of PCA obs scores, tab.cap="\\label{PCAObsTabl}PCA observation scores for the first 8 rows of the cities data (closed and open)", results='hold'}
+OScores <- data.frame(City=cities_clr$City[1:8],
+                      PC1_closed=round(pca_cities_clos$x[1:8,1],3),
+                      PC2_closed=round(pca_cities_clos$x[1:8,2],3),
+                      PC1_open=round(pca_cities_open$x[1:8,1],3),
+                      PC2_open=round(pca_cities_open$x[1:8,2],3))
+ft <- flextable(OScores)
+ft <- theme_zebra(ft,odd_header = "#D0E0FF", even_header = "#D0E0FF")
+ft <- border_outer(ft, border = BorderDk, part = "all")
+ft %>% border_inner_v(border=BorderLt, part="header")
+```
+
+## References and R Packages
+
+Fox, J. (2022). *RcmdrMisc: R Commander Miscellaneous Functions*. R package
+version 2.7-2. <https://CRAN.R-project.org/package=RcmdrMisc>
+
+John Fox and Sanford Weisberg (2019). *An {R} Companion to Applied Regression*
+(**car**), Third Edition. Thousand Oaks CA: Sage. URL:
+<https://socialsciences.mcmaster.ca/jfox/Books/Companion/>
+
+Garrett, R.G. (2018). *rgr: Applied Geochemistry EDA*. R package version 1.1.15.
+<https://CRAN.R-project.org/package=rgr>
+
+Greenacre, M. (2018). *Compositional Data Analysis in Practice*. CRC Press LLC, 
+Boca Raton, FL, USA. 
+
+Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X. (2021). Land consumption in cities:
+A comparative study across the globe. *Cities*, **113**: 103163,
+<https://doi.org/10.1016/j.cities.2021.103163>.
+
+Reimann, C., Filzmoser, P., Garrett, R. G., & Dutter, R. (2008). *Statistical
+Data Analysis Explained: Applied Environmental Statistics with R* (First ed.).
+John Wiley & Sons, Chichester, UK.

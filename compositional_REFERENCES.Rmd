@@ -1,0 +1,81 @@
+---
+documentclass: article
+classoption: a4paper
+geometry: margin=0.6in
+output: 
+  pdf_document: 
+    fig_caption: yes
+    number_sections: yes
+    highlight: tango
+  html_document: 
+    toc_depth: 2
+    fig_caption: yes
+    number_sections: yes
+    self_contained: no
+  word_document: 
+    toc_depth: 2
+    fig_caption: yes
+fontsize: 12pt
+header-includes:
+  \usepackage{sourcesanspro}
+  \usepackage[T1]{fontenc}
+  \renewcommand{\familydefault}{\sfdefault}
+  \renewcommand{\thefigure}{7.\arabic{figure}}
+  \renewcommand{\thetable}{7.\arabic{table}}
+---
+
+## References
+
+\scriptsize
+
+Campbell, G. P., Curran, J. M., Miskelly, G. M., Coulson, S., Yaxley, G.
+M., Grunsky, E. C., & Simon C. Cox. (2009). Compositional data analysis
+for elemental data in forensic science. 
+*Forensic Science International*, **188**, 81-90.
+<https://doi.org/10.1016/j.forsciint.2009.03.018>
+
+Fox, J. (2022). *RcmdrMisc: R Commander Miscellaneous Functions*. R
+package version 2.7-2. <https://CRAN.R-project.org/package=RcmdrMisc>
+
+Fox, John and Sanford Weisberg (2019). *An {R} Companion to Applied
+Regression* (**car**), Third Edition. Thousand Oaks CA: Sage. URL:
+<https://socialsciences.mcmaster.ca/jfox/Books/Companion/>
+
+Garrett, R.G. (2018). *rgr: Applied Geochemistry EDA*. R package version
+1.1.15. <https://CRAN.R-project.org/package=rgr>
+
+Grunsky, E. C. (2010). The interpretation of geochemical survey data.
+*Geochemistry: Exploration, Environment, Analysis*, **10**, 27-74.
+<https://doi.org/10.1144/1467-7873/09-210>
+
+Kassambara, A. and Mundt, F. (2020). *factoextra: Extract and Visualize
+the Results of Multivariate Data Analyses*. R package version 1.0.7.
+<https://CRAN.R-project.org/package=factoextra>
+
+Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., Hornik, K.(2021).
+*cluster: Cluster Analysis Basics and Extensions*. R package version
+2.1.2. <https://CRAN.R-project.org/package=cluster>
+
+Reimann, C., Filzmoser, P., Garrett, R. G., and Dutter, R. (2008).
+*Statistical Data Analysis Explained: Applied Environmental Statistics
+with R* (First ed.). John Wiley & Sons, Chichester, UK.
+
+Venables, W. N. and Ripley, B. D. (2002) *Modern Applied Statistics with
+S* (**MASS**). Fourth Edition. Springer, New York. ISBN 0-387-95457-0.
+<http://www.stats.ox.ac.uk/pub/MASS4/>
+
+Weihs, C., Ligges, U., Luebke, K. and Raabe, N. (2005). **klaR** --
+Analyzing German Business Cycles. **In** Baier, D., Decker, R. and
+Schmidt-Thieme, L. (eds.). *Data Analysis and Decision Support*,
+335-343, Springer-Verlag, Berlin.
+
+Wickham, H. (2019). *stringr: Simple, Consistent Wrappers for Common
+String Operations*. R package version 1.4.0.
+<https://CRAN.R-project.org/package=stringr>
+
+Xu, N., Rate, A. W., & Morgan, B. (2018). From source to sink:
+Rare-earth elements trace the legacy of sulfuric dredge spoils on
+estuarine sediments. *Science of The Total Environment*, **637-638**,
+1537-1549. <https://doi.org/10.1016/j.scitotenv.2018.04.398>
+
+\normalsize

@@ -1,0 +1,808 @@
+---
+documentclass: article
+classoption: a4paper
+geometry: margin=0.6in
+output: 
+  pdf_document: 
+    fig_caption: yes
+    number_sections: yes
+    highlight: tango
+  html_document: 
+    toc_depth: 2
+    fig_caption: yes
+    number_sections: yes
+    self_contained: no
+  word_document: 
+    toc_depth: 2
+    fig_caption: yes
+fontsize: 12pt
+header-includes:
+  \usepackage{sourcesanspro}
+  \usepackage[T1]{fontenc}
+  \renewcommand{\familydefault}{\sfdefault}
+  \renewcommand{\thefigure}{7.\arabic{figure}}
+  \renewcommand{\thetable}{7.\arabic{table}}
+---
+
+\setcounter{section}{6}
+
+```{r load table making pkgs, include=FALSE}
+library(flextable)
+library(magrittr)
+library(png)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+
+addImg <- function(obj, x = NULL, y = NULL, width = NULL, interpolate = TRUE){
+  if(is.null(x) | is.null(y) | is.null(width)){stop("Must provide args 'x', 'y', and 'width'")}
+  USR <- par()$usr ; PIN <- par()$pin ; DIM <- dim(obj) ; ARp <- DIM[1]/DIM[2]
+  WIDi <- width/(USR[2]-USR[1])*PIN[1] ;   HEIi <- WIDi * ARp 
+  HEIu <- HEIi/PIN[2]*(USR[4]-USR[3]) 
+  rasterImage(image = obj, xleft = x-(width/2), xright = x+(width/2),
+            ybottom = y-(HEIu/2), ytop = y+(HEIu/2), interpolate = interpolate)
+}
+```
+
+```{r page 1 header hide code, fig.height=1.5, fig.width=10, echo=FALSE, out.width="100%", fig.align='right', results='hold'}
+logo <- readPNG("UWA logo_text_V_wsL.png")
+par(mar = c(0,0,0,0))
+layout(matrix(c(1,1,1,1,2),nrow = 1))
+
+plot(c(0,1),c(0,1), axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+text(-0.025,0.9, pos = 4, cex = 2.6, font = 2, 
+     labels="ENVTM501 Data Analysis in R for Compositional Data")
+text(-0.025,0.6, pos = 4, cex = 2.2, 
+     labels="Multivariate analyses on whole-rock major element compositional data")
+text(-0.025,0.4, pos = 4, font = 3, cex = 1.4, col = 12,
+     labels="Geochemical data for international samples of whole rocks (USGS)")
+text(1,0.1, pos = 2, font = 3, family = 'serif', cex = 1.5, col = 2,
+     labels="Andrew Rate, School of Agriculture and Environment")
+plot(1,1, axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+addImg(logo, x = 1.2, y = 1, width = 0.5)
+par(mar = c(3.5,3.5,0.5,0.5))
+```
+
+```{r load packages etc., message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(ggplot2)
+library(maps)
+library(reshape2)
+library(ggpubr)
+library(flextable)
+library(magrittr)
+library(RcmdrMisc)
+library(klaR)
+library(TeachingDemos)
+library(corrplot)
+library(Hmisc)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+UWApal <- c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E","gray40","gray85","#FFFFFF","transparent"); palette(UWApal)
+```
+
+```{r read file and convert pct data tp ppm, include=FALSE, results='hide'}
+usgs <- read.csv("https://raw.githubusercontent.com/Ratey-AtUWA/compositional_data/main/usgs_ngdb_trimmed.csv", stringsAsFactors = TRUE)
+usgs_ppm <- usgs
+for(i in 9:20) {
+  usgs_ppm[,i] <- usgs_ppm[,i]*10000
+}
+```
+
+```{r clr-tranform data, include=FALSE, results='hold'}
+usgs_clr <- usgs_ppm
+usgs_clr[,9:33] <- 
+  clr(usgs_ppm[,9:33], ifwarn = TRUE) # recommend ifwarn = TRUE
+```
+
+We are using a curated version of a whole rock composition dataset from
+The US Geological Survey (<https://mrdata.usgs.gov/ngdb/rock/>). This
+mostly contains data for rock samples from the USA, with a small
+proportion of data from other geographical regions
+(\autoref{sampleMap}).
+
+\scriptsize
+
+```{r sample location map, fig.align='center', fig.cap="\\label{sampleMap}Location maps for samples in the USGS National Geochemical Database subset used in this guide.", fig.height=3.8, fig.width=10, message=FALSE, warning=FALSE, out.width='90%', results='hide'}
+require(ggplot2); require(maps)
+mp <- NULL
+mapWorld <- borders("world", colour="gray", fill="gray") # create a layer of borders
+ggplot() + mapWorld + 
+  geom_point(aes(x=Longitude, y=Latitude,color=Country, shape=Country), 
+                     data=usgs, size=2, line=2) +
+  scale_shape_manual(values=c(rep(c(15,17,18,19),4),15,3,17,18,19)) + 
+  scale_colour_manual(values = rainbow(21, v=0.75, end=0.85)) + 
+  xlim(-180,180) + theme_minimal()
+```
+
+```{r table of rock types, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, tab.cap="Numbers of samples in the USGS data by rock category and general type.", results='hold'}
+rocktabl <- data.frame(Category = levels(usgs$Rock),
+                       n = as.numeric(table(usgs$Rock)),
+                       Type = c("intermediate","mafic","intermediate","mafic",
+                                "felsic","ultramafic","ultramafic","felsic"))
+ft <- flextable(rocktabl)
+ft <- theme_zebra(ft,odd_header = "#D0E0FF")
+ft <- height_all(ft, height=0.15, unit = "in"); ft <- hrule(ft, rule = "exact")
+ft <- width(ft, j=1:3, width=c(2,1.5,2.5), unit = "in")
+ft %>% border_outer(border = BorderDk, part = "all")
+```
+
+\normalsize
+
+We note from Table 7.1 that there are two rock categories in each
+general type. This may cause some interesting classification issues
+based on elemental composition, since, within each type, the categories
+may have similar ranges of element concentrations, but differ in texture
+(the size of mineral crystals). Since we don't have information in our
+data on rock texture, our supervised classification may make some
+mistakes! Let's see . . .
+
+# LDA-PCA -- Linear Discriminant Analysis using Principal Components
+
+## Calculation of Principal Components
+
+\scriptsize
+
+```{r run and summarise PCA, results='hold'}
+#
+# the USGS data subset we are using has no missing values, so
+# we can use it for PCA without creating a temporary data frame
+pca_usgs <- prcomp(usgs_clr[,9:33], scale. = TRUE)
+pca_usgs$rot[,1:5]
+cat("...\n\nComponent Variances - CLR-transformed (open) data\n")
+pca_usgs$sdev^2
+cat("___\n\nProportions of variance explained by each component",
+    "\nCLR-transformed (open) data\n")
+round(pca_usgs$sdev^2/sum(pca_usgs$sdev^2),3)
+cat("___\n\nCumulative proportions of variance explained by each component",
+    "\nCLR-transformed (open) data\n")
+cumsum(round(pca_usgs$sdev^2/sum(pca_usgs$sdev^2),3))
+```
+
+\normalsize
+
+### Visualize PCA scree plot (eigenvalues)
+
+The scree plot for this PCA in \autoref{screeplot} shows 7 components
+with variances (eigenvalues) greater than 1.
+
+\scriptsize
+
+```{r scree plots, echo=FALSE, fig.height=2.5, fig.width=4, message=FALSE, warning=FALSE, out.width='50%', fig.align='center', fig.cap="\\label{screeplot}PCA scree plots for whole-rock composition data, corrected for closure using CLR-transformation.", results='hold'}
+par(mar = c(3.,3.5,1.2,1), mfrow = c(1,1), mgp=c(2,0.8,0), font.lab=2)
+plot(pca_usgs, main = "", cex.main = 1, col = 4)
+axis(1, at=seq(0.8,11.4,l=10), labels=seq(1,10,1), tcl=0.01, col=15, mgp=c(0.5,0.1,0))
+mtext("Component", side = 1, line = 1.15, font = 2)
+abline(h = 1, col = 11, lty = 2)
+```
+
+\normalsize
+
+### Visualize PCA ordination
+
+We have a lot of observations (rows), so to plot the component loadings
+over the cloud of points, we draw the biplot manually with manual
+scaling of observation scores. The '\texttt{shadowtext}' function is from the
+**TeachingDemos** R package. We could also use some of the PCA
+presentation functions in the **factoextra** package.
+
+\scriptsize
+
+```{r visualise PCA, fig.height=6, fig.width=6, fig.align='center', out.width='65%', fig.cap="\\label{PCAbiplot}PCA biplot for major element rock composition data, with observations categorised by rock type. Data were corrected for closure using CLR-transformation.", results='hold'}
+
+require(car) # for data ellipses (see Fig 1.4)
+par(mfrow=c(1,1), mar = c(3,3,3,3), oma = c(0,0,0,0), 
+    mgp=c(1.6,0.3,0), tcl = 0.25, font.lab=2,
+    lend = "square", ljoin = "mitre")
+# clrz <- matrix(rainbow(20,v=0.8,end=0.8,alpha=0.4),ncol=10,byrow = T)
+# attributes(clrz) <- NULL
+palette(c("black",c("#104E8B80", "#A0522D80", "#36648B80", "#8B5A2B80", 
+          "#CD000080", "#A020F080", "#7D26CD80", "#CD4F3980"),"white"))
+
+# choose components and set scaling factor (sf)
+v1 <- 1; v2 <- 2; sf <- 0.06
+
+plot(pca_usgs$rot[,v1]*1.5, pca_usgs$rot[,v2]*1.6, 
+       type = "n", xlim=c(-0.7,0.55), ylim = c(-0.4,0.4), 
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+points(pca_usgs$x[,v1]*sf, pca_usgs$x[,v2]*sf,
+       pch = c(0,1,2,5,15,16,17,18)[usgs_clr$Rock],
+       lwd=c(2,2,2,2,0,0,0,0)[usgs_clr$Rock], 
+       col = c(2:9)[usgs_clr$Rock], cex = 1)
+
+arrows(0, 0, pca_usgs$rot[,v1], pca_usgs$rot[,v2], 
+       length = 0.08, lwd = 2)
+shadowtext(pca_usgs$rot[,v1]*1.1, 
+           jitter(pca_usgs$rot[,v2]*1.1, factor = 10),
+           labels = row.names(pca_usgs$rot), 
+           col="black",bg="white")
+# dataEllipse(x=pca_usgs$x[,v1]*sf, y=pca_usgs$x[,v2]*sf*1.5,
+#             groups = usgs_clr$Rock, add = TRUE, plot.points = FALSE,
+#             levels = c(0.9), center.pch = 3, col = 2:21,
+#             lty = 2, lwd = 1, center.cex = 2.4, group.labels = "")
+legend("topleft", bty = "n", inset = 0.003, ncol=1,
+       box.col = "gray", box.lwd = 2, bg = 14,
+       legend = levels(usgs_clr$Rock),
+       pch = c(0,1,2,5,15,16,17,18), 
+       pt.lwd = c(2,2,2,2,0,0,0,0),
+       col = c(2:9), pt.bg = c(2:9),
+       pt.cex = c(1.2, 1.4, 1.2,1.2,1.4),
+       cex = 1, x.intersp = 0.6, y.intersp = 0.9)
+```
+
+```{r factoextra pca biplot, fig.height=5, fig.width=6, message=FALSE, warning=FALSE, fig.align='center', out.width='65%', fig.cap="\\label{FVbiplot}PCA biplot for major element rock composition data generated with the factoextra package, with observations categorised by rock type. Data were corrected for closure using CLR-transformation.", results='hold'}
+usgsBP <- fviz_pca_biplot(pca_usgs, title = "", geom="point",
+                col.ind = usgs_clr$Rock, 
+                col.var = "black", repel = TRUE,
+                pch = c(19,19,17,17,19,19,17,17)[usgs_clr$Rock],
+                palette = c("dodgerblue4","sienna","steelblue4","tan4", 
+                            "red3", "purple", "purple3", "tomato3"),
+                alpha.ind = 0.35)
+usgsBP + theme_classic()
+```
+
+\normalsize
+
+We can see the results of this PCA biplot visualization in
+\autoref{PCAbiplot} and \autoref{FVbiplot}. Those of you who are
+geologically or geochemically inclined can decide whether the apparent
+element associations (*e.g*. the similar vectors for Ce, La, and Y) make
+sense. There certainly does seem to be some separation of categories in
+PCA space, shown by the observation scores (symbols), even though PCA is
+not really a classification method. Similar colours are used for similar
+rock types, *e.g*. basalt and gabbro are in the brown hued symbols at
+top left.
+
+### Add principal components to data frame
+
+We will include all principal component scores for each sample in our
+CLR-transformed data frame (code not shown), even though the Kaiser
+rules suggest that at most 7 components contain useful information. We
+don't have to subsequently use them *all* !. [**Note** that we could
+also perform LDA using the information stored in the PCA output object
+itself.]
+
+```{r add PCs to dataframe, message=FALSE, warning=FALSE, include=FALSE}
+usgs_clr <- cbind(usgs_clr, pca_usgs$x)
+names(usgs_clr)
+```
+
+## LDA on PCA ordination scores of whole rock major element data
+
+In this exercise we use the first 15 Principal Components as predictor
+variables for the Linear Discriminant Analysis. This is somewhat
+arbitrary, but it's a conservative approach as we're including about
+twice as many principal components than the 7-8 suggested by the Kaiser
+rules.
+
+\scriptsize
+
+```{r LDA-PCA whole rock data, message=FALSE, warning=FALSE, results='hold'}
+
+data0 <- usgs_clr[,c("Rock","PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8",
+                     "PC9","PC10","PC11","PC12","PC13","PC14","PC15","PC16",
+                     "PC17","PC18","PC19","PC20","PC21","PC22","PC23","PC24",
+                     "PC25")]
+data0[,2:26] <- scale(data0[,2:26]) # scale just numeric variables
+lda_pca_usgs <- lda(formula = Rock ~ PC1 + PC2 + PC3 + PC4 + PC5 + 
+                       PC6 + PC7 + PC8 + PC9 + PC10 + 
+                      PC11 + PC12 + PC13 + PC14 + PC15, data = data0,
+                    prior = as.numeric(summary(data0$Rock))/nrow(data0)) 
+print(lda_pca_usgs$call) # custom output is tidier for pdf
+cat("\nPrior probablilities:\n");print(lda_pca_usgs$prior, digits=2)
+cat("\nGroup means:\n");print(lda_pca_usgs$means, digits=2)
+cat("\nCoefficients of linear discriminants:\n")
+print(lda_pca_usgs$scaling, digits=3)
+```
+
+```{r correl matrix CLR not used in this version, echo=FALSE, message=FALSE, warning=FALSE}
+cormat <- rcorr.adjust(data0[,2:9], 
+                       type="pearson")
+cat("Correlation matrix for PCA scores (not part of LDA output):\n"); round(cormat$R$r, digits = 4)
+rm(cormat)
+```
+
+\normalsize
+
+The correlation matrix table above is not really needed, but it's
+included because it shows something worth remembering. We see from the
+correlation matrix that, as should be the case with PCA, the principal
+components are completely uncorrelated. **Remember**: we cannot make an
+LDA model if the predictors are too collinear (too highly correlated).
+
+## Visualising PCA-LDA separation
+
+### LDA histograms
+
+We can plot the separation achieved by each linear discriminant (LD)
+function by predicting the classification using the input data, then
+using the \texttt{ldahist} function (Venables and Ripley 2002) -- see
+\autoref{ldaHist}. To see the separation in another LDA dimension, we
+change the subscript in the \texttt{pred_lda_pca$x[,1]} option.
+
+\scriptsize
+
+```{r lda histogram, fig.align='center', fig.cap="\\label{ldaHist}Histogram based on the first linear discriminant function for LDA on selected principal components calculated from open (CLR-transformed) whole-rock major element data.", fig.height=12, fig.width=6, out.height="80%", results='hold'}
+pred_lda_pca <- predict(lda_pca_usgs, usgs_clr[,34:48])
+ldahist(pred_lda_pca$x[,1], g = usgs_clr$Rock, type = "both")
+```
+
+\normalsize
+
+The histograms in \autoref{ldaHist} show the most overlap in the first
+linear discriminant between rocks of the same broad type (*e.g*. the two
+ultramafic rocks *peridotite* and *pyroxenite*). We only plot this LDA
+dimension to save space, but it would be good practice to inspect the
+next few dimensions as well, guided by the 'Proportion of trace' in the
+initial LDA output above.
+
+We could also draw partition plots, but these are not presented in this
+version of this document.
+
+### Scatter Plots resembling biplots
+
+Scatter-plots showing each variable and observation in linear
+discriminant dimensions, and grouped by category, are useful for visual
+assessment of how well the LDA model separates the observations. [*Code
+is truncated.*]
+
+\scriptsize
+
+```{r plot LDA PCA, fig.height=8, fig.width=8, out.width="85%", fig.align='center', fig.cap="\\label{LDAPCAbiplot}Linear discriminant analysis (LDA) plots for Pricipal Components based on open (CLR-transformed) rock composition data: (a) variable coefficients in LD1-LD2 space, and predictions for observations in (b) LD1-LD2 space; (c) LD1-LD3 space; (d) LS2-LD3 space. Legend in (a) applies to plots (b), (c), and (d).", echo=1:17, results='hold'}
+par(mfrow = c(2,2), mar = c(3.5,3.5,1,1), mgp = c(1.5,0.3,0), tcl = 0.25,
+    lend = "square", ljoin = "mitre", cex.main = 0.9, font.lab=2)
+palette(c("black",c("#104E8B80", "#A0522D80", "#36648B80", "#8B5A2B80", 
+          "#CD000080", "#A020F080", "#7D26CD80", "#CD4F3980"),"white"))
+plot(lda_pca_usgs$scaling[,1], lda_pca_usgs$scaling[,2], 
+     type="n", xlim = c(-1.2,3),  ylim = c(-0.9,0.6), 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [2]", 
+     main="Variable Coefficients [LD1, LD2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+for(i in 1:NROW(lda_pca_usgs$scaling)){
+  arrows(0,0,lda_pca_usgs$scaling[i,1],lda_pca_usgs$scaling[i,2],
+         length = 0.08, col = "grey60") }
+text(lda_pca_usgs$scaling[,1]*1.1, lda_pca_usgs$scaling[,2]*1.1, 
+     labels=row.names(lda_pca_usgs$scaling[,1:2]),
+     cex = 0.9, col = 1, pos=c(1,2,3,4), offset = 0.01)
+mtext("(a)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+clrz <- matrix(rainbow(20,v=0.8,end=0.8),ncol=10,byrow = T)
+attributes(clrz) <- NULL
+legend("topright", ncol = 2, legend=levels(usgs_clr$Rock), 
+       col=c(2:9), pch=c(0,1,2,5,15,16,17,18), pt.lwd = 2,
+       bty="n", box.col="grey90", y.intersp = 1, 
+       title="Rock Type in (b) - (d)",
+       box.lwd=2, inset=0.02, pt.cex=1.5, cex=1.1)
+
+ldapcaPred_usgs <- predict(lda_pca_usgs)
+
+plot(ldapcaPred_usgs$x[,1], ldapcaPred_usgs$x[,2], 
+     cex = 1., lwd=2, col = c(2:9)[usgs_clr$Rock],
+     pch = c(0,1,2,5,15,16,17,18)[usgs_clr$Rock], 
+     main = "Predictions for Observations [LD1, LD2] based on PCA", 
+     xlab = "Linear Discriminant [1]", ylab = "Linear Discriminant [2]")
+abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+mtext("(b)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+
+plot(ldapcaPred_usgs$x[,1], ldapcaPred_usgs$x[,3], 
+     col=c(2:9)[usgs_clr$Rock],
+     pch=c(0,1,2,5,15,16,17,18)[usgs_clr$Rock], lwd=2, 
+     cex = 1., 
+     main="Predictions for Observations [LD1, LD3] based on PCA", 
+     xlab="Linear Discriminant [1]", ylab="Linear Discriminant [3]")
+sf <- 2.5; abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+for(i in 1:NROW(lda_pca_usgs$scaling)){
+  arrows(0,0,lda_pca_usgs$scaling[i,1]*sf,lda_pca_usgs$scaling[i,3]*sf,
+         length = 0.1, col = 1, lwd = 2) }
+shadowtext(lda_pca_usgs$scaling[,1]*sf*1.1, lda_pca_usgs$scaling[,3]*sf*1.1, 
+     labels=row.names(lda_pca_usgs$scaling[,1:4]),
+     cex = 0.75, col = 1, bg = 10, pos=c(1,2,3,4), offset = 0.01)
+mtext("(c)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+
+plot(ldapcaPred_usgs$x[,2], ldapcaPred_usgs$x[,4], 
+     col=c(2:9)[usgs_clr$Rock],
+     pch=c(0,1,2,5,15,16,17,18)[usgs_clr$Rock], lwd=2, 
+     cex = 1., 
+     main="Predictions for Observations [LD2, LD4] based on PCA", 
+     xlab="Linear Discriminant [2]", ylab="Linear Discriminant [4]")
+sf <- 5; abline(v=0,col="grey",lty=2); abline(h=0,col="grey",lty=2)
+for(i in 1:NROW(lda_pca_usgs$scaling)){
+  arrows(0,0,lda_pca_usgs$scaling[i,2]*sf,lda_pca_usgs$scaling[i,4]*sf,
+         length = 0.1, col = 1, lwd = 2) }
+shadowtext(lda_pca_usgs$scaling[,2]*sf*1.1, lda_pca_usgs$scaling[,4]*sf*1.1, 
+     labels=row.names(lda_pca_usgs$scaling[,1:4]),
+     cex = 0.75, col = c("black","blue3"), bg = 10, 
+     pos=c(1,2,3,4), offset = 0.01)
+mtext("(d)", 3, -1.5, adj = 0.05, cex = 1.2, font = 2)
+```
+
+```{r reset par to 1x1, message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+par(mfrow=c(1,1))
+```
+
+\normalsize
+
+The plot in \autoref{LDAPCAbiplot} looks slightly weird, as the labels
+for the LDA coefficients reflect the use of Principal Components as
+predictors. In this sense they may not be as intuitively interpretable
+as predictors which are actual measured variables (or transformations of
+these variables, at least.
+
+It definitely seems that LDA is able to separate categories (hint: try
+thinking of \autoref{LDAPCAbiplot} (b) and (c) as the front and top
+views of a 3D cloud of points). There may be some overlap of different
+rocks within the same type, *e.g*. the felsic rocks granite and
+rhyolite, and the plot may exacerbate the visual overlap by using
+similar colours for rocks in the same group (felsic = brown).
+
+## Inspecting the agreement between actual and predicted categories in LDA
+
+To do this easily we just make an R data frame with columns for the
+actual categories (from the original data frame) and the predicted
+categories (from the prediction objects we just made). We add a column
+telling us if these two columns match in each row (which we can see
+easily, but we use this column to calculate a numerical prediction
+accuracy).
+
+The code below uses the *head()* function to inspect the first few rows
+of each comparison, but we could easily look at the whole comparison
+data frames using *print()*.
+
+\scriptsize
+
+```{r compare models with reality, paged.print=FALSE, results='hold'}
+ldapcaComp <- data.frame(Actual = as.character(usgs_clr$Rock),
+                      Predicted = as.character(pred_lda_pca$class))
+ldapcaComp$test <- as.character(usgs_clr$Rock) == 
+  as.character(pred_lda_pca$class)
+k = length(which(ldapcaComp$test == TRUE))
+cat("\nPredictions by LDA using PCAs from open data:",k,"out of",NROW(usgs_clr),
+    "=",paste0(round(100*k/NROW(usgs_clr),1),"% correct\n"))
+head(ldapcaComp, n = 10)
+```
+
+\normalsize
+
+For this dataset, it seems as though LDA using principal components is
+not that good at predicting the Rock category for each observation! In
+the output above, rhyolite is mis-identified as dacite (the rocks are
+from adjacent compositional groups, felsic (rhyolite) and intermediate
+(dacite), and there may be overlap at extremes of typical composition
+ranges).
+
+This kind of comparison is not very rigorous, and nor does it address
+the reason we might perform a supervised classification like LDA -- to
+use data to predict *unknown* categories. The ability of LDA to predict
+unknown categories can be addressed by validation procedures, such as
+the one we investigate below.
+
+But first we can use one of the options in the\texttt{lda()} function
+itself, cross validation (\texttt{CV = TRUE}):
+
+\scriptsize
+
+```{r LDA inbuilt cross validation, paged.print=FALSE, results='hold'}
+
+lda_pca_usgs_cv <- lda(formula = Rock ~ PC1 + PC2 + PC3 + PC4 + PC5 + 
+                       PC6 + PC7 + PC8 + PC9 + PC10 + 
+                      PC11 + PC12 + PC13 + PC14 + PC15, data = data0,
+                    prior = as.numeric(summary(data0$Rock))/nrow(data0),
+                    CV = TRUE) 
+cat("\nLDA predictions (first several):\n"); head(lda_pca_usgs_cv$class, n=27)
+cat("\nPosterior probabilities (first few rows):\n"); head(lda_pca_usgs_cv$posterior)
+ldapcaComp <- data.frame(Observed=usgs_clr$Rock,Predicted=lda_pca_usgs_cv$class)
+cat("\nComparison of (first several) LDA predictions with reality:\n")
+head(ldapcaComp, n = 15)
+```
+
+\normalsize
+
+Including the \texttt{CV = TRUE} option in the \texttt{lda()} function implements
+'leave one out cross validation'. Simply stated, this omits one
+observation at a time, running the LDA on the remaining data each time,
+and predicting the probability of the missed observation being in each
+category (the *posterior probabilities*). [Each observation is assigned
+to the category with the greatest posterior probability -- the
+'**MAP**'.]
+
+## Assessment of LDA prediction using a training-validation method
+
+We have seen this related method, using 'training' and 'validation'
+subsets of our data, in a previous session. We divide the dataset into
+two subsets, with one subset of the data used to generate an LDA model,
+which is then used to predict the categories in the other subset. The
+training-validation process is repeated numerous times to calculate an
+average prediction rate.
+
+**NOTE**: in a dataset with many observations, like the one we're using
+in this session (5980 rows), the validation process will be slow, since
+we are creating and assessing the LDA model many times over.
+
+\scriptsize
+
+```{r LDA on PCA train and predict, message=FALSE, warning=FALSE, paged.print=FALSE, results='hold'}
+n0 <- 100 # number of iterations
+ftrain <- 0.5 # proportion of observations in training set
+results <- data.frame(
+  Rep = rep(NA, n0),
+  matches = rep(NA, n0),
+  non_matches = rep(NA, n0),
+  success = rep(NA, n0))
+train <- sample(1:NROW(usgs_clr), round(NROW(usgs_clr) * ftrain,0))
+# make vector of individual category non-matches
+matchByClass <- 
+  data.frame(Match1 = rep(0,nlevels(usgs$Rock[train]))) 
+rownames(matchByClass) <- levels(pred_lda_pca$class)
+fMatchXClass <- 
+  data.frame(PctMch1 = rep(0,nlevels(usgs$Rock[train]))) 
+rownames(fMatchXClass) <- levels(pred_lda_pca$class)
+# make vector of cumulative category counts in usgs_clr[-train] iterations
+cc0 <- rep(0,nlevels(usgs_clr$Rock))
+isOK <- 0 ; i <- 2
+
+for (i in 1:n0) {
+  train <- sample(1:NROW(usgs_clr), round(NROW(usgs_clr) * ftrain,0))
+      # set condition requiring all categories to be populated
+      if (is.na(match(NA,tapply(usgs_clr[train,]$SiO2, 
+                      usgs_clr[train,]$Rock, sd, na.rm=T))) == TRUE) {
+          lda_Rock_train <- lda(formula = Rock ~ PC1 + PC2 + PC3 + 
+                            PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10 + 
+                            PC11 + PC12 + PC13 + PC14 + PC15, 
+                            data = usgs_clr[train,],
+                            prior=as.numeric(summary(usgs_clr$Rock[train]))/
+                            nrow(usgs_clr[train,]))
+          pred_lda_pca_train <- predict(lda_Rock_train, usgs_clr[-train,])
+          isOK <- isOK + 1
+        }
+  
+  k=0               # number of matches
+  m0 <-             # vector of individual category matches 
+    as.matrix(rep(0,nlevels(usgs_clr$Rock[train]))) 
+  rownames(m0) <- levels(usgs_clr$Rock)
+  m1 <-             # vector of fractional category matches 
+    as.matrix(rep(0,nlevels(usgs_clr$Rock[train]))) 
+  rownames(m1) <- levels(usgs_clr$Rock)
+  for (jM in 1:NROW(usgs_clr[-train,])) {
+    for (jS in 1:nlevels(pred_lda_pca_train$class)) {
+      if((pred_lda_pca_train$class[jM] == levels(pred_lda_pca_train$class)[jS]) & 
+         (usgs_clr$Rock[-train][jM] == levels(pred_lda_pca_train$class)[jS]) ) 
+        m0[jS] = m0[jS] + 1
+      else  m0[jS] = m0[jS] 
+    }
+    k = sum(m0)
+  }
+  cc0 <- cc0 + as.numeric(summary(usgs_clr$Rock[-train]))
+  m1 <- round(100*m0/as.numeric(summary(usgs_clr$Rock[-train])),1)
+  matchByClass[,paste0("Match",i)] <- m0
+  fMatchXClass[,paste0("PctMch",i)] <- m1
+  # output to results data frame: iteration, matches, non-matches, proportion matched
+  results[i,] <- c(i, k, NROW(usgs_clr[-train,])-k, 
+                   signif(k/NROW(usgs_clr[-train,]),3))
+}
+# Output code block
+cat(paste("[Based on", n0, "random subsets of",paste0(100*ftrain,"%"),
+          "of the dataset to train LDA model\n",
+     "      to predict remaining observations]\n"))
+  cat("Number of obs. in random subsets =",NROW(train),
+      " (predicting",NROW(usgs_clr)-NROW(train),"samples)\n")
+  print(numSummary(results[,2:4], statistics=c("mean","sd"))$table)
+  ns0 <- numSummary(results$success)
+  t0 <- t.test(results$success)
+  cat(rep("-\u2013-",24),
+      "\nStat. summary for 'success':\nMean = ",round(ns0$table[1],4),
+      ", sd = ",round(ns0$table[2],4),
+      ", 95% confidence interval = (",
+      signif(t0$conf.int[1],3),", ",signif(t0$conf.int[2],4),
+      ") (after ",i," reps)\n", sep="")
+  cat(n0-isOK,"iterations 'failed' due to randomisation missing a category\n\n")
+  cat("Fraction of matches by category over ALL iterations:\n")
+  summCats <- data.frame(
+    Rock_Type = row.names(matchByClass),
+    Total_Matched = rowSums(matchByClass),
+    Actual = cc0,
+    Percent_Matched = paste0(round(100*(rowSums(matchByClass)/cc0),1),"%"),
+    row.names = NULL)
+  print(summCats)
+# tidy up
+rm(list = c("n0","ftrain","i","isOK","jS","jM","k","m0","m1","t0","cc0",
+            "matchByClass","fMatchXClass","results","train","summCats"))
+```
+
+\normalsize
+
+An issue that we haven't considered yet is whether all the variables we
+used for prediction are necessary. The R package '**klaR**' (Weihs et
+al. 2005) includes the \texttt{stepclass()} function, which enables us to
+refine an LDA model, using a procedure similar to stepwise selection of
+predictors in multiple regression. We need to specify (1) the model as a
+formula (the same as used previously), (2) the data frame to be used
+and, [of course] (3) that we are using **lda** as our classification
+method.
+
+The outcome of applying the stepclass procedure depends a lot on some of
+the other options selected. It is usually necessary to set the default
+improvement tolerance (5% = 0.05) to a lower value - we're using 0.005
+(0.5%). We set the criterion to be optimised to "CR", the correctness
+rate (for comparison with our validation output), and also select "both"
+(*i.e*. forward-backward) for predictor selection. If we want to see the
+progress of the stepwise selection, we need to set 'output = TRUE'.
+
+\scriptsize
+
+```{r stepwise LDA, message=FALSE, warning=FALSE, results='hold'}
+lda_pca_step <- stepclass(formula = Rock ~ PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + 
+                      PC7 + PC8 + PC9 + PC10 + PC11 + PC12 + PC13 + PC14 + PC15,
+                      data = usgs_clr, method = "lda", 
+                      direction = "both", criterion = "CR",
+                      improvement = 0.005, output = FALSE)
+cat("Final",lda_pca_step$method,"model:",
+    as.character(lda_pca_step$formula)[c(2,1,3)],"\n\n")
+cat(lda_pca_step$per, signif(lda_pca_step$result.pm[1], 4), sep=":")
+```
+
+\normalsize
+
+The output from stepwise selection of LDA predictors shows us that we do
+not need to include all the principal components to achieve a
+correctness rate (62.8%) similar to that achieved above (62.7%).
+
+As is the case with stepwise selection of predictors for multiple linear
+regression, the choice of method options would affect our result. For
+example, you could try changing the *direction*, *criterion*, or
+*improvement* options (run \texttt{help(package="klaR", topic="stepclass")}
+for details of the choices).
+
+We would re-run our LDA model following stepwise selection, using the
+formula after 'final model:' in the output above.
+
+# Regression Analysis using Compositional Data
+
+A useful article on this topic is:<br> van den Boogaart, K.G.,
+Filzmoser, P., Hron, K. *et al*. (2021). Classical and robust regression
+analysis with compositional data. *Mathematical Geosciences* **53**,
+823--858. <https://doi.org/10.1007/s11004-020-09895-w>
+
+We have some data on 106 topsoil (A-horizon) soil samples including
+proportions of soil grainsize-range categories and other numeric
+variables. The data have been censored to remove observations (rows)
+having missing values.
+
+```{r read the topsoil data}
+git <- "https://raw.githubusercontent.com/Ratey-AtUWA/compositional_data/main/"
+topsoil <- read.csv(paste0(git,"topsoil.csv"), stringsAsFactors = TRUE)
+rm(git)
+```
+
+We're going to add alr- transformed proportions of soil grainsize-range
+categories to the 'topsoil' data frame. We use the ilr (**i**sometric
+**l**og-**r**atio) transformation as there can be problems in some
+statistical procedures with the singular covariance matrix of
+clr-transformed compositional data.
+
+```{r add alr transformed grainsize to data}
+tempDF <- data.frame(Gravel.alr=rep(NA,NROW(topsoil)),
+                     Silt.alr=rep(NA,NROW(topsoil)),
+                     Clay.alr=rep(NA,NROW(topsoil)))
+topsoil[,c("Gravel.alr","Silt.alr","Clay.alr")] <-
+  alr(topsoil[,c("Gravel","Sand","Silt","Clay")], j=2, ifwarn = F)
+summary(topsoil[,c("Gravel.alr","Silt.alr","Clay.alr")])
+```
+
+We might (for instance) be interested in whether we can predict the
+density of soil, which affects porosity and penetration of plant roots,
+from the grain-size proportions. Since there are almost certainly
+collinearities between closed grain-size proportions, we might expect a
+better linear regression model using the *alr-transformed* data which
+have closure removed. Note that the alr transformation uses one of the
+closed-set variables as the denominator for the log-ratio:
+
+$alr(x)_i = \ln\frac{x_i}{x_D}$; 
+in this example $alr(x)_i = \ln\frac{x_i}{Sand_i}$
+
+\scriptsize
+
+```{r compare correlation matrices, fig.height=4, fig.width=8, out.width='70%', fig.align='center', fig.cap="\\label{CompCorr}Correlations in soil texture variables, omitting Sand content since it is used as the denominator for additive log-ratio transformation, for (a) untransformed (closed) and (b) alr-transformed (opened) grain size data."}
+require(corrplot); require(Hmisc)
+par(mar=c(1,5,5,3), mfrow=c(1,2), mgp=c(1.5,0.2,0), xpd=T)
+cor0 <- rcorr(as.matrix(topsoil[,c("Gravel","Silt","Clay")]))
+m0 <- cor0$r; row.names(m0) <- c("Gravel.raw","Silt.raw","Clay.raw")
+colnames(m0) <- row.names(m0)
+corrplot(m0, method="ellipse", cl.ratio = 0.25,
+         addCoef.col = "black", tl.col = "grey33", cl.pos = "b")
+mtext("(a) Closed", side = 3, line = 1, adj = 0.05)
+cor0 <- rcorr(as.matrix(topsoil[,c("Gravel.alr","Silt.alr","Clay.alr")]))
+corrplot(cor0$r, method="ellipse", title = "", cl.ratio = 0.25,
+         addCoef.col = "black", tl.col = "darkred", cl.pos = "b")
+mtext("(b) Open (alr)", side = 3, line = 1, adj = 0.05)
+```
+
+\normalsize
+
+It looks in this case like we "lose" a variable but, in a fixed-sum
+closed set, one variable is always defined by the total minus the sum of
+remaining variables, so this information was not really useful anyway.
+In our example the information on sand is still contained within the alr
+variables, *i.e*.:
+
+$Gravel.alr_i = \ln\frac{Gravel_i}{Sand_i}$;
+$Clay.alr_i =\ln\frac{Clay_i}{Sand_i}$;
+$Silt.alr_i = \ln\frac{Silt_i}{Sand_i}$
+
+The collinearity of the closed data was not very pronounced
+(\autoref{CompCorr}), but of course one of the parts of the composition
+(sand) was not included. If it is, the correlation matrix for
+untransformed variables looks like \autoref{CompCor2}, with a large
+negative correlation between Gravel and Sand.
+
+```{r correlation matrix for all grainsize ategs, fig.height=4, fig.width=4, out.width='35%', fig.align='center', fig.cap="\\label{CompCor2}Correlations in soil texture variables (including Sand content) for untransformed (closed) grain size data."}
+par(mar=c(1,5,5,3), mfrow=c(1,1), mgp=c(1.5,0.2,0), xpd=T)
+cor0 <- rcorr(as.matrix(topsoil[,c("Gravel","Sand","Silt","Clay")]))
+corrplot(cor0$r, method="ellipse", cl.ratio = 0.25,
+         addCoef.col = "black", tl.col = "grey33", cl.pos = "b")
+par(mfrow=c(1,1), mar = c(4,4,1,1))
+```
+
+We now fit a linear model to both versions of the grain-size category
+data, using ordinary least-squares regression. For a "fair" comparison,
+we omit sand from both versions, since it is the denominator in the
+alr-transformed variables. *However*, the full textural data (Gravel 
+**+ Sand** + Silt + Clay) are used as predictors first, so we can see what
+happens.
+
+```{r}
+attach(topsoil)
+lm_clos4 <- lm(Bulk.density ~ Gravel + Sand + Silt + Clay)
+summary(lm_clos4)
+lm_closed <- lm(Bulk.density ~ Gravel + Silt + Clay)
+summary(lm_closed)
+lm_open <- lm(Bulk.density ~ Gravel.alr + Silt.alr + Clay.alr)
+summary(lm_open)
+detach(topsoil)
+```
+
+The prediction ability, with any multiple regression model run, is not
+compelling (see the R-squared values!). The effects of at least one of
+the predictor variables (Silt) is significant for both models which omit
+sand. The collinearity in the full untransformed data is too great for
+any predictor to have a significant effect, even though it explains the
+most variance ($R^{2}$ = 0.177) and is significant overall (p($H_{0}$)
+$\approx$ 0.0005).
+
+```{r remove temp LDA objects, message=FALSE, warning=FALSE, include=FALSE, echo=FALSE}
+rm(list = c("n0","ftrain","i","e0","jS","jM","k","m0","cor0",
+            "matchByClass","results","train","lm_clos4","lm_closed","lm_open"))
+```
+
+## Activities to try if you have time
+
+1.  Run stepwise LDA predictor selection with different options (*e.g*. change 
+    the criterion).
+2.  Run LDA using the original variables (ALR-transformed, of course) as
+    predictors -- is the correctness rate better or worse?
+3.  Check that the optimised model(s) from stepwise selection really do
+    achieve the same separation of categories as using all possible
+    predictors.
+4.  Try a supervised classification to predict whether a rock is from
+    one of the four main types (felsic, intermediate, mafic, or
+    ultramafic).
+5.  Run a supervised classification on your own favourite set of
+    compositionally closed data!
+6.  Try different variations of (multiple) regression models on a more complex 
+    compositional dataset.

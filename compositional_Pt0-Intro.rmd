@@ -1,0 +1,359 @@
+---
+documentclass: article
+classoption: a4paper
+geometry: margin=0.6in
+output: 
+  html_document: 
+    toc_depth: 2
+    fig_caption: yes
+    number_sections: yes
+    self_contained: no
+  pdf_document: 
+    fig_caption: TRUE
+    number_sections: TRUE
+    toc: no
+    highlight: tango
+  word_document: 
+    toc_depth: 2
+    fig_caption: yes
+fontsize: 12pt
+header-includes:
+  \usepackage{sourcesanspro}
+  \usepackage[T1]{fontenc}
+  \renewcommand{\familydefault}{\sfdefault}
+  \renewcommand{\thefigure}{0.\arabic{figure}}
+  \renewcommand{\thetable}{0.\arabic{table}}
+---
+
+\setcounter{section}{-1}
+
+```{r load knitr, include=FALSE}
+library(flextable)
+library(magrittr)
+library(png)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+
+addImg <- function(obj, x = NULL, y = NULL, width = NULL, interpolate = TRUE){
+  if(is.null(x) | is.null(y) | is.null(width)){stop("Must provide args 'x', 'y', and 'width'")}
+  USR <- par()$usr ; PIN <- par()$pin ; DIM <- dim(obj) ; ARp <- DIM[1]/DIM[2]
+  WIDi <- width/(USR[2]-USR[1])*PIN[1] ;   HEIi <- WIDi * ARp 
+  HEIu <- HEIi/PIN[2]*(USR[4]-USR[3]) 
+  rasterImage(image = obj, xleft = x-(width/2), xright = x+(width/2),
+            ybottom = y-(HEIu/2), ytop = y+(HEIu/2), interpolate = interpolate)
+}
+```
+
+```{r page 1 header hide code, fig.height=1.5, fig.width=10, echo=FALSE, out.width="100%", fig.align='right', results='hold'}
+logo <- readPNG("UWA logo_text_V_wsL.png")
+par(mar = c(0,0,0,0))
+layout(matrix(c(1,1,1,1,2),nrow = 1))
+
+plot(c(0,1),c(0,1), axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+text(-0.025,0.9, pos = 4, cex = 2.6, font = 2, 
+     labels="ENVTM501 Data Analysis in R for Compositional Data")
+text(-0.025,0.6, pos = 4, cex = 2.2, 
+     labels="Multivariate analyses on cities land-use compositional data")
+text(-0.025,0.4, pos = 4, font = 3, cex = 1.4, col = 12,
+     labels="Land use proportional area data for 40 cities on Earth")
+text(1,0.1, pos = 2, font = 3, family = 'serif', cex = 1.5, col = 2,
+     labels="Andrew Rate, School of Agriculture and Environment")
+plot(1,1, axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+addImg(logo, x = 1.2, y = 1, width = 0.5)
+par(mar = c(3.5,3.5,0.5,0.5))
+```
+
+# Introduction
+
+Compositional data, defined as any measurements which are proportions of some
+whole, are common in many disciplines, including (Table 0.1):
+
+```{r table of compositional data examples, tab.cap="Examples of compositional data by discipline.", echo=FALSE}
+CoDas <- data.frame(Discipline = c("Environmental science","Geography",
+                                   "Geology and geochemistry","Biology","Politics"),
+                    Examples = c("Sediment or soil texture - proportions of mineral grains in particle size range fractions", "Proportions of land area subject to different land uses","Elemental composition of rocks","Plant species abundance as a proportion of ground cover","Percentage of voters supporting each candidate"))
+ft <- flextable(CoDas)
+ft <- theme_zebra(ft,odd_header = "#D0E0FF")
+ft <- height_all(ft, height=0.2, unit = "in"); ft <- hrule(ft, rule = "exact")
+ft <- width(ft, j=1:2, width=c(2,5), unit = "in")
+ft <- border_outer(ft, border = BorderDk, part = "all")
+ft %>% border_inner_v(border=BorderDk, part="header")
+```
+
+Compositional data have mathematical properties which result in misleading
+conclusions from traditional statistical analyses. Compositional variables
+(including concentrations of substances in water [or air, or rock, or soil, and
+so on] or proportions of land surface coverage) are technically part of a
+fixed-sum closed set. For example, with data on percent land use over an urban
+area, all percentages add up to 100%! As Greenacre (2018) points out, we often 
+deal with *subcompositions* rather than compositions, because we do not (or can 
+not) measure all possible components of a sample. For example, in environmental 
+science, when we measure the substances present in water, we don't usually 
+measure the concentration of water itself. Or in politics, we report the 
+proportions of voters who voted for each candidate, but not often the proportion 
+of citizens who didn't vote.
+
+The issue of subcompositions is not necessarily a problem. For instance, in the 
+political example above, the ratio of voters supporting the two leading 
+candidates will be the same whether we consider the total eligible electors, or 
+only the people who actually voted. As we will see below, a key strategy for 
+analysing compositional data is the use of some sort of *ratio*.
+
+If uncorrected, analysis of data having fixed-sum closure can lead to very
+misleading conclusions, especially when *relationships* between variables are
+being investigated, as in correlation analyses or *multivariate methods* such as
+principal component analysis. Closed data require specialised transformations to
+remove closure, such as calculation of **centered or additive log ratios**
+(Reimann et al. 2008). The centered log-ratio is defined by:
+
+$x_{CLR} = log(\dfrac{x}{geomean(x_{1},...,x_{n})})$, where 
+
+- $x$ is the value being transformed (concentration, proportion);
+- $x_{CLR}$ is the centered log-ratio transformed value;
+- $geomean$ means the geometric mean of;
+- $x_{1}...x_{n}$ are all the $n$ values contributing to the (sub)composition, including the one ($x$) being transformed;
+- all the components (parts) of the composition need to be in *identical units* (*e.g*. percent, mg/L, incidence per 10,000, *etc*.).
+
+For example, in a soil texture analysis where the proportions of grain size 
+categories gravel (G), sand (S), silt (Z), and clay (C) all add up to 100%, the 
+CLR-transformed sand content is:
+
+$S_{CLR} = log(\dfrac{S}{geomean(G,S,Z,C)})$
+
+The example in \autoref{PFe} shows the relationship
+between phosphorus (P) and iron (Fe) in soil/sediment materials in an acid
+sulfate environment. Without correcting for compositional closure, the P *vs*.
+Fe plot implies that P increases as Fe increases. Correcting for compositional
+closure, however, suggests the opposite, with P negatively related to Fe! In
+this case, if we had used conventional transformations, we might have come to a
+very wrong conclusion about the sediment properties affecting phosphorus.
+
+```{r closed open example P-Fe, echo=FALSE, fig.height=3.5, fig.width=7, message=FALSE, warning=FALSE, out.width="60%", fig.align='center', fig.cap="\\label{PFe}Comparison of relationships between P and Fe for (a) compositionally closed concentrations showing a positive relationship and (b) concentration variables corrected for compositional closure using centred log ratios showing a negative relationship. Data from Xu et al. (2018).", results='hold'}
+nx.clr <- read.csv("nx_clr.csv", stringsAsFactors = TRUE)
+par(mfrow=c(1,2), mar=c(3,3,1.,1), oma=c(0,0,0,0), mgp=c(1.4,0.1,0.0), lend=2, ljoin=1, 
+    font.lab=2, cex.axis=1, cex.lab=1.1, cex=1., lwd=1, tcl=0.2)
+palette(c("black","goldenrod2","royalblue4","gray92",
+          "#EADBA4","#808BD6","gray50","#00083D","#51471D","gray24"))
+# closed
+plot(nx.clr$Fe.oes/1e3, nx.clr$P.oes, log="xy", pch=c(17,15)[nx.clr$Type],
+     col=c(2,3)[nx.clr$Type],
+     lwd=2, xlab=expression(bold(paste(Fe[closed]," (mg/kg)"%/%"1000"))),
+     ylab=expression(bold(paste(P[closed]," (mg/kg)"))))
+mtext(side=2, line=1.4, expression(bold(paste(P[closed]," (mg/kg)"))), cex=1.1)
+mtext("(a)", 3, -1.25, adj = 0.05, font = 2, cex = 1.1)
+legend("left", bty = "n", legend = c("Dredge spoil","Sediment"),
+       pch = c(17,15), col = c(2,3), pt.lwd = c(2,1), pt.cex = c(1,1.1))
+# clr
+plot(nx.clr$Fe, nx.clr$P, pch=c(17,15)[nx.clr$Type], col=c(2,3)[nx.clr$Type], lwd=2,
+     xlab=expression(bold(paste(Fe[open]," (clr-transformed)"))),
+     ylab=expression(bold(paste(P[open]," (clr-transformed)"))))
+mtext("(b)", 3, -1.25, adj = 0.95, font = 2, cex = 1.1)
+```
+
+In this UWA Micro-Credential course, you will learn specialised methods which
+allow you to analyse compositional data so that results can be interpreted with
+confidence. Students will also gain skills in use of R for relevant multivariate
+data analyses.
+
+First we load the packages we need, and set a preferred colour palette.
+
+\scriptsize
+
+```{r load packages etc., message=FALSE, warning=FALSE, results='hide'}
+library(stringr)
+library(knitr)
+library(RcmdrMisc)
+library(MASS)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(ggplot2)
+library(reshape2)
+library(ggpubr)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+```
+
+\normalsize
+
+## Load the cities data
+
+**Data are from**: Fig. 11 *in* Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X., 2021. Land consumption in cities: A comparative study across the globe. *Cities*, **113**: 103163, <https://doi.org/10.1016/j.cities.2021.103163>. (digitised from figure using <https://automeris.io/WebPlotDigitizer/>)
+
+After reading the data we make a column containing abbreviated codes for the
+land-use type factor, using the \texttt{gsub()} function to substitute character
+strings.
+
+\small
+
+```{r read file and show data, results='hold'}
+cities <- 
+  read.csv(paste0("https://raw.githubusercontent.com/Ratey-AtUWA/",
+                  "compositional_data/main/cities_Hu_etal_2021.csv"), 
+           stringsAsFactors = TRUE)
+ft <- flextable(cities)
+ft <- add_header_row(ft, values = c("","Land use categories","City categories"),
+                     colwidths = c(1,4,3))
+ft <- set_caption(ft, caption = "Cities land use data used in this document, showing cities 
+      categorized by land-use Type, Global socioeconomic zone, and geographic Region.")
+ft <- theme_zebra(ft,odd_header = "#D0E0FF", even_header = "#D0E0FF")
+ft <- align(ft,align = "center", part = "header")
+ft <- height_all(ft, height=0.39, unit = "cm"); ft <- hrule(ft, rule = "exact")
+ft <- width(ft, j=1:8, width=c(2.7,1.5,1.5,1.8,1.5,3,2,3), unit = "cm")
+ft <- border_outer(ft, border = BorderDk, part = "all")
+ft %>% border_inner_v(border=BorderLt, part="header")
+```
+
+\normalsize
+
+The original data categorised the cities by **Type**, based on the land use
+categories occupying the greatest proportion(s) of urban area. We have added two
+other categories, **Global** identifying each city as being in the socioeconomic
+"global south" or "global north" zones, and also assigning each city to a
+geographic **Region**, a category having eight levels. All categories are stored
+as factors in the R data frame.
+
+\scriptsize
+
+```{r make new Type factor with abbreviated names, results='hide', echo=FALSE}
+row.names(cities) <- as.character(cities$City)
+cities$sType <- as.character(cities$Type)
+cities$sType <- gsub("Compact-Open","CO",cities$sType)
+cities$sType <- gsub("Open-Lightweight","OL",cities$sType)
+cities$sType <- gsub("Compact","C",cities$sType)
+cities$sType <- gsub("Open","O",cities$sType)
+cities$sType <- gsub("Industrial","I",cities$sType)
+cities$sType <- as.factor(cities$sType)
+```
+
+\normalsize
+
+## Make CLR-transformed dataset
+
+\scriptsize
+
+```{r clr-transform data, paged.print=FALSE, results='hold'}
+cities_clr <- cities
+cities_clr[,c("Compact","Open","Lightweight","Industry")] <- 
+  clr(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+head(cities_clr[,1:8])
+```
+
+\normalsize
+
+## Compare correlation matrices
+
+\scriptsize
+
+```{r correlation matrix comnparison, fig.height=3.6, fig.width=7.2, out.width="70%", fig.align='center', fig.cap="\\label{corrmats}Correlation matrices for (a) closed, and (b) open (CLR-transformed) variables (code is not shown).", results='hold',echo=FALSE}
+cormat <- round(cor(cities[,c("Compact","Open",
+                              "Lightweight","Industry")]),2)
+mltcor <- melt(cormat)
+heatmap <- ggplot(mltcor, aes(Var2, Var1, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal()+ # minimal theme
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 12, hjust = 1)) +
+  coord_fixed() + 
+  geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+  theme(axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.ticks = element_blank()) +
+  guides(fill = guide_colorbar(barwidth = 2, barheight = 7,
+                title.position = "top", title.hjust = 0.5))
+
+cormat <- round(cor(cities_clr[,c("Compact","Open",
+                                  "Lightweight","Industry")]),2)
+mltcor <- melt(cormat)
+heatmap_clr <- ggplot(mltcor, aes(Var2, Var1, fill = value))+
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 12, hjust = 1)) +
+  coord_fixed() + 
+  geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+  theme(axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.ticks = element_blank()) +
+  guides(fill = guide_colorbar(barwidth = 2, barheight = 7,
+                       title.position = "top", title.hjust = 0.5))
+ggarrange(heatmap,heatmap_clr,labels=c("(a) closed","(b) open"),
+          ncol=2,nrow=1)
+```
+
+\normalsize
+
+By comparing \autoref{corrmats}(a) and \autoref{corrmats}(b), we can already see
+that addressing closure with the centered-logratio (CLR) transformation changes
+the interpretation of relationships between the variables.
+
+**Some other things to try**
+
+- comparing the distributions of untransformed and CLR-transformed pairs of variables using histograms or density plots
+- comparing scatter plots of untransformed and CLR-transformed pairs of variables (maybe using the scatterplotMatrix() function in the **car** package).
+
+## References and R Packages
+
+Fox, J. (2022). *RcmdrMisc: R Commander Miscellaneous Functions*. R package
+version 2.7-2. <https://CRAN.R-project.org/package=RcmdrMisc>
+
+John Fox and Sanford Weisberg (2019). *An {R} Companion to Applied Regression*
+(**car**), Third Edition. Thousand Oaks CA: Sage. URL:
+<https://socialsciences.mcmaster.ca/jfox/Books/Companion/>
+
+Garrett, R.G. (2018). *rgr: Applied Geochemistry EDA*. R package version 1.1.15.
+<https://CRAN.R-project.org/package=rgr>
+
+Greenacre, M. (2018). *Compositional Data Analysis in Practice*. CRC Press LLC, 
+Boca Raton, FL, USA. 
+
+Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X. (2021). Land consumption in cities:
+A comparative study across the globe. *Cities*, **113**: 103163,
+<https://doi.org/10.1016/j.cities.2021.103163>.
+
+Kassambara, A. and Mundt, F. (2020). *factoextra: Extract and Visualize the
+Results of Multivariate Data Analyses*. R package version 1.0.7.
+<https://CRAN.R-project.org/package=factoextra>
+
+Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., Hornik, K.(2021). *cluster:
+Cluster Analysis Basics and Extensions*. R package version 2.1.2.
+<https://CRAN.R-project.org/package=cluster>
+
+Reimann, C., Filzmoser, P., Garrett, R. G., & Dutter, R. (2008). *Statistical
+Data Analysis Explained: Applied Environmental Statistics with R* (First ed.).
+John Wiley & Sons, Chichester, UK.
+
+Venables, W. N. & Ripley, B. D. (2002) *Modern Applied Statistics with S*
+(**MASS**). Fourth Edition. Springer, New York. ISBN 0-387-95457-0.
+<http://www.stats.ox.ac.uk/pub/MASS4/>
+
+Wickham, H. (2019). *stringr: Simple, Consistent Wrappers for Common String
+Operations*. R package version 1.4.0.
+<https://CRAN.R-project.org/package=stringr>
+
+Xu, N., Rate, A. W., & Morgan, B. (2018). From source to sink: Rare-earth
+elements trace the legacy of sulfuric dredge spoils on estuarine sediments.
+*Science of The Total Environment*, **637-638**, 1537-1549.
+<https://doi.org/10.1016/j.scitotenv.2018.04.398>

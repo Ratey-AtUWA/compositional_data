@@ -1,0 +1,381 @@
+---
+documentclass: article
+classoption: a4paper
+geometry: margin=0.6in
+output: 
+  pdf_document: 
+    fig_caption: TRUE
+    number_sections: TRUE
+    toc: no
+    highlight: tango
+  html_document: 
+    toc_depth: 2
+    fig_caption: yes
+    number_sections: yes
+    self_contained: no
+  word_document: 
+    toc_depth: 2
+    fig_caption: yes
+fontsize: 12pt
+header-includes:
+  \usepackage{sourcesanspro}
+  \usepackage[T1]{fontenc}
+  \renewcommand{\familydefault}{\sfdefault}
+  \renewcommand{\thefigure}{1.\arabic{figure}}
+  \renewcommand{\thetable}{1.\arabic{table}}
+---
+
+\setcounter{section}{0}
+
+```{r load knitr, include=FALSE}
+library(flextable)
+library(magrittr)
+library(png)
+
+set_flextable_defaults(theme_fun = "theme_zebra", 
+                       font.size = 9, fonts_ignore = TRUE)
+BorderDk <- officer::fp_border(color = "#B5C3DF", style = "solid", width = 1)
+BorderLt <- officer::fp_border(color = "#FFFFFF", style = "solid", width = 1)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+
+addImg <- function(obj, x = NULL, y = NULL, width = NULL, interpolate = TRUE){
+  if(is.null(x) | is.null(y) | is.null(width)){stop("Must provide args 'x', 'y', and 'width'")}
+  USR <- par()$usr ; PIN <- par()$pin ; DIM <- dim(obj) ; ARp <- DIM[1]/DIM[2]
+  WIDi <- width/(USR[2]-USR[1])*PIN[1] ;   HEIi <- WIDi * ARp 
+  HEIu <- HEIi/PIN[2]*(USR[4]-USR[3]) 
+  rasterImage(image = obj, xleft = x-(width/2), xright = x+(width/2),
+            ybottom = y-(HEIu/2), ytop = y+(HEIu/2), interpolate = interpolate)
+}
+```
+
+```{r page 1 header hide code, fig.height=1.5, fig.width=10, echo=FALSE, out.width="100%", fig.align='right', results='hold'}
+logo <- readPNG("UWA logo_text_V_wsL.png")
+par(mar = c(0,0,0,0))
+layout(matrix(c(1,1,1,1,2),nrow = 1))
+
+plot(c(0,1),c(0,1), axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+text(-0.025,0.9, pos = 4, cex = 2.6, font = 2, 
+     labels="ENVTM501 Data Analysis in R for Compositional Data")
+text(-0.025,0.6, pos = 4, cex = 2.2, 
+     labels="Multivariate analyses on cities land-use compositional data")
+text(-0.025,0.4, pos = 4, font = 3, cex = 1.4, col = 12,
+     labels="Land use proportional area data for 40 cities on Earth")
+text(1,0.1, pos = 2, font = 3, family = 'serif', cex = 1.5, col = 2,
+     labels="Andrew Rate, School of Agriculture and Environment")
+plot(1,1, axes=F, type="n",xaxt="n", yaxt="n",ann=F)
+addImg(logo, x = 1.2, y = 1, width = 0.5)
+par(mar = c(3.5,3.5,0.5,0.5))
+```
+
+```{r load packages etc., message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+library(stringr)
+library(knitr)
+library(RcmdrMisc)
+library(MASS)
+library(rgr)
+library(car)
+library(cluster)
+library(factoextra)
+library(ggplot2)
+library(reshape2)
+library(ggpubr)
+
+palette(c("black", "#003087", "#DAAA00", "#8F92C4", "#E5CF7E", 
+          "#001D51", "#B7A99F", "#A51890", "#C5003E", "#FDC596", 
+          "#AD5D1E", "gray40", "gray85", "#FFFFFF", "transparent"))
+```
+
+```{r read file and format data, include=FALSE, results='hold'}
+cities <- 
+  read.csv(paste0("https://raw.githubusercontent.com/Ratey-AtUWA/",
+                  "compositional_data/main/cities_Hu_etal_2021.csv"), 
+           stringsAsFactors = TRUE)
+row.names(cities) <- as.character(cities$City)
+cities$sType <- as.character(cities$Type)
+cities$sType <- gsub("Compact-Open","CO",cities$sType)
+cities$sType <- gsub("Open-Lightweight","OL",cities$sType)
+cities$sType <- gsub("Compact","C",cities$sType)
+cities$sType <- gsub("Open","O",cities$sType)
+cities$sType <- gsub("Industrial","I",cities$sType)
+cities$sType <- as.factor(cities$sType)
+```
+
+```{r clr-transform data, include=FALSE, paged.print=FALSE, results='hold'}
+cities_clr <- cities
+cities_clr[,c("Compact","Open","Lightweight","Industry")] <- 
+  clr(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+head(cities_clr[,1:8])
+```
+
+# Principal components analysis
+
+It is quite common to measure many variables in environmental science and other
+disciplines. Using various types of *ordination analysis*, we can use the
+information contained in multiple variables to create a reduced subset of
+variables containing nearly the same amount of information. Ordination methods
+are also referred to, for this reason, as 'data reduction' methods and are
+commonly used for multivariate analysis.
+
+One of the earliest and most widely used ordination methods for exploration and
+dimension-reduction of multivariate data is **principal components analysis**
+(PCA). Imagine a dataset with many samples (rows) and n continuous numeric
+variables (columns) which contain quantitative information about each sample
+such as concentrations, heights, velocities, *etc*. For these *n*
+variables/dimensions, the principal component calculation generates *n* new
+variables, or principal components, which are each a function of the set of all
+the original variables (so each principal component is defined by a weighting or
+coefficient for each of the original variables). We may choose to omit some
+variables from the analysis if they contain too many missing observations or if
+there is another valid reason to doubt their integrity. Since each principal
+component is selected to account for successively smaller proportions of the
+multiple variance, it is usually the first few principal components which
+explain most of the variance and therefore contain the most useful information.
+We conventionally visualize this in a 'scree plot' (\autoref{screeplots}), a
+kind of bar graph showing the decrease in variance accounted for by each
+component.
+
+\scriptsize
+
+```{r run and summarise PCA, results='hold'}
+#
+data0 <- na.omit(cities[,c("Compact","Open","Lightweight","Industry")])
+pca_cities_clos <- prcomp(data0, scale. = TRUE)
+cat("Variable weightings (rotations) - closed data\n")
+pca_cities_clos$rot
+cat("...\n\nComponent Variances - Closed data\n")
+pca_cities_clos$sdev^2
+cat("...\n\nProportions of variance explained by each component",
+    "\nCLR-transformed (open) data\n")
+round(pca_cities_clos$sdev^2/sum(pca_cities_clos$sdev^2),3)
+cat("\n--------------------\nVariable weightings (rotations) - open data\n")
+
+data0 <- na.omit(cities_clr[,c("Compact","Open","Lightweight","Industry")])
+pca_cities_open <- prcomp(data0, scale. = TRUE)
+pca_cities_open$rot
+cat("...\n\nComponent Variances - CLR-transformed (open) data\n")
+pca_cities_open$sdev^2
+cat("...\n\nProportions of variance explained by each component",
+    "\nCLR-transformed (open) data\n")
+round(pca_cities_open$sdev^2/sum(pca_cities_open$sdev^2),3)
+rm(data0)
+```
+
+\normalsize
+
+## Principal Components Analysis output
+
+As well as the component variances, the useful results of principal components
+analysis include the variable weightings or 'rotations' for each principal
+component. Referring to just the output for **open data** above, PC1 (which
+explains the most multivariate variance) has its greatest absolute contributions
+from the Lightweight and Industry variables, which act in opposite directions
+(remembering that the sign is arbitrary, but that *relative* sign and magnitude
+are important). PC2 contains mainly variance from the Compact and Open
+variables, PC3 (which explains much less variance) reflects Open/Industry, and
+we can ignore PC4 as it has a negligible component variance.
+
+In addition, every individual observation (sample) is a multivariate point, the
+observation scores for all samples in each principal component based on the
+values of the variables used in PCA for that sample. It is conventional to plot
+both of these two types of output in a principal component **biplot**, as shown
+in \autoref{PCAplots}. Before discussing the biplot, we should note that the
+sign (positive or negative) of variable weightings and observation scores
+(*i.e*. the direction of the axes) is arbitrary and should not affect our
+interpretations.
+
+\scriptsize
+
+```{r scree plots, echo=FALSE, fig.height=2.5, fig.width=6, message=FALSE, warning=FALSE, out.width='60%', fig.align='center', fig.cap="\\label{screeplots}PCA scree plots for urban land-use data, for: (a) compositionally closed proportions; (b) data corrected for closure using CLR-transformation.", results='hold'}
+par(mar = c(3.,3.5,1.2,1), mfrow = c(1,2), mgp=c(2,0.8,0), font.lab=2)
+plot(pca_cities_clos, main = "(a) closed", cex.main = 1, col = 5)
+axis(1, at=seq(0.8,4.2,l=4), labels=seq(1,4,1), tcl=0.01, col=15, mgp=c(0.5,0.1,0))
+mtext("Component", side = 1, line = 1.15, font = 2)
+plot(pca_cities_open, main = "(b) open (CLR)", cex.main = 1, col = 4)
+axis(1, at=seq(0.8,4.2,l=4), labels=seq(1,4,1), tcl=0.01, col=15, mgp=c(0.5,0.1,0))
+mtext("Component", side = 1, line = 1.15, font = 2)
+par(mar = c(3.5,3.5,1,1), mfrow = c(1,2), mgp=c(1.7,0.3,0))
+```
+
+\normalsize
+
+There are informal 'rules' for deciding which of the principal components 
+contain useful information:
+
+1. Components having variance greater than 1 (the 'Kaiser' criterion)
+2. Components up to a cumulative proportion of variance explained of 0.8 (80%)
+
+For example, for the open data, the component variances are PC1 1.976, PC2
+1.511, PC3 0.513, PC4 1.5E-31 -- so only PC1 and PC2 meet the first criterion.
+Similarly, the *cumulative* proportions of variance explained by each component
+are PC1 0.494, PC1+PC2 0.872, so by criterion 2 no useful information is
+contained in principal components >2. In this example both criteria agree (they
+don't always!).
+
+Another part of the PCA output that we need to know about is the set of
+*observation scores*, essentially showing where each observation (each city, in
+these data) plots in principal component space. We're only interested in PC1 and
+PC2, since they are the only components meeting the criteria. The observation
+scores for the first rows of the data are as follows (\autoref{PCAObsTabl}):
+
+```{r table of PCA obs scores, tab.cap="\\label{PCAObsTabl}PCA observation scores for the first 8 rows of the cities data (closed and open)", results='hold'}
+OScores <- data.frame(City=cities_clr$City[1:8],
+                      PC1_closed=round(pca_cities_clos$x[1:8,1],3),
+                      PC2_closed=round(pca_cities_clos$x[1:8,2],3),
+                      PC1_open=round(pca_cities_open$x[1:8,1],3),
+                      PC2_open=round(pca_cities_open$x[1:8,2],3))
+ft <- flextable(OScores)
+ft <- theme_zebra(ft,odd_header = "#D0E0FF", even_header = "#D0E0FF")
+ft <- border_outer(ft, border = BorderDk, part = "all")
+ft<- border_inner_v(ft, border=BorderLt, part="header"); ft
+```
+
+## Principal components biplots
+
+\scriptsize
+
+```{r visualise PCA, fig.height=6, fig.width=12, fig.align='center', fig.cap="\\label{PCAplots}PCA biplots for urban land-use data, with observations categorised by type for: (a) compositionally closed proportions; (b) data corrected for closure using CLR-transformation.", results='hold'}
+
+require(car) # for data ellipses (see Fig 1.4)
+par(mfrow=c(1,2), mar = c(3.5,3.5,3.5,3.5), oma = c(0,0,0,0), 
+    mgp=c(1.7,0.3,0), tcl = 0.25, font.lab=2,
+    lend = "square", ljoin = "mitre")
+# choose components and set scaling factor (sf)
+v1 <- 1; v2 <- 2; sf <- 0.45
+
+biplot(pca_cities_clos, choices = c(v1,v2), col = c(2,1), cex=c(1,0.0),
+       pc.biplot = FALSE, scale = 0.4, arrow.len = 0.08,
+       xlim = c(-1.5,1.5), ylim = c(-1.2,1.2),
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings"))
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("Untransformed data\n(compositionally closed)",
+      side = 3, line = -2, font = 2, adj = 0.98)
+data0 <- na.omit(cities[,c("Type","Global","Region","Compact",
+                           "Open","Lightweight","Industry")])
+points(pca_cities_clos$x[,v1]*sf, pca_cities_clos$x[,v2]*sf*1.5,
+       pch = c(22,21,24,0,1)[data0$Type],
+       lwd = 2, bg = c(2,3,4,5,6)[data0$Type],
+       col = c(2,3,8,9,11)[data0$Type],
+       cex = c(1.2,1.4,1.2,1.2,1.4)[data0$Type])
+dataEllipse(x=pca_cities_clos$x[,v1]*sf, y=pca_cities_clos$x[,v2]*sf*1.5,
+            groups = data0$Type, add = TRUE, plot.points = FALSE, 
+            levels = c(0.9), center.pch = 3, col = c(2,3,8,9,11),
+            lty = 2, lwd = 1, center.cex = 2.4, group.labels = "")
+legend("bottomright", bty = "o", inset = 0.03,
+       box.col = "gray", box.lwd = 2, bg = 14,
+       legend = levels(data0$Type),
+       pch = c(22,21,24,0,1), pt.lwd = 2,
+       col = c(2,3,8,9,11), pt.bg = c(2,3,4,5,6),
+       pt.cex = c(1.2, 1.4, 1.2,1.2,1.4),
+       cex = 0.9, y.intersp = 0.9)
+mtext("(a)", side = 3, line = -1.5, font = 2, adj = 0.02, cex = 1.25)
+
+sf <- 0.65 # adjust scaling factor for next PCA biplot
+
+biplot(pca_cities_open, choices = c(v1,v2), col = c(2,1), cex=c(0.8,1),
+       pc.biplot = FALSE, scale = 0.2, arrow.len = 0.08,
+       xlim = c(-1.2,3.2), ylim = c(-3.5,1.7),
+       xlab = paste0("Scaled PC",v1," Component Loadings"),
+       ylab = paste0("Scaled PC",v2," Component Loadings")) 
+mtext(paste0("Scaled PC",v1," Observation Scores"), 3, 1.6, font = 2)
+mtext(paste0("Scaled PC",v2," Observation Scores"), 4, 1.6, font = 2)
+mtext("CLR\ntransformed\ndata\n(no closure)",
+      side = 3, line = -4, font = 2, adj = 0.98)
+data0 <- na.omit(cities_clr[,c("Type","Compact","Open","Lightweight","Industry")])
+points(pca_cities_open$x[,v1]*sf, pca_cities_open$x[,v2]*sf,
+       pch = c(22,21,24,0,1)[data0$Type],
+       lwd=2, bg = c(2,3,4,5,6)[data0$Type],
+       col = c(2,3,8,9,11)[data0$Type],
+       cex = c(1.2,1.4,1.2,1.2,1.4)[data0$Type])
+dataEllipse(x=pca_cities_open$x[,v1]*sf, y=pca_cities_open$x[,v2]*sf*1.5,
+            groups = data0$Type, add = TRUE, plot.points = FALSE, 
+            levels = c(0.9), center.pch = 3, col = c(2,3,8,9,11),
+            lty = 2, lwd = 1, center.cex = 2.4, group.labels = "")
+legend("bottomright", bty = "o", inset = 0.03,
+       box.col = "gray", box.lwd = 2, bg = 14,
+       legend = levels(data0$Type),
+       pch = c(22,21,24,0,1), pt.lwd = 2,
+       col = c(2,3,8,9,11), pt.bg = c(2,3,4,5,6),
+       pt.cex = c(1.2, 1.4, 1.2,1.2,1.4),
+       cex = 0.9, y.intersp = 0.9)
+mtext("(b)", side = 3, line = -1.5, font = 2, adj = 0.02, cex = 1.25)
+```
+
+```{r remove temp PCA objects, message=FALSE, warning=FALSE, include=FALSE, echo=FALSE}
+rm(list = c("v1","v2","sf","data0"))
+```
+
+\normalsize
+
+PCA biplots are useful, because the *variable weightings* group together for
+variables (measurements) that are related to one another. For example, in the
+biplots in \autoref{PCAplots}, the variables are relative land areas under 4
+land-use categories (which have been corrected in \autoref{PCAplots}(b) for
+compositional closure using the CLR transformation). These variables are shown
+as vectors (arrows) in the biplot of principal components PC1 and PC2, and
+variables which are related have vectors of similar length and/or direction. For
+example, the variables 'Compact' and 'Industry' plot closely together on biplot
+(a), suggesting some relationship between these land use categories. Removing
+closure in our data (biplot (b)) seems to remove this relationship, so it is
+probably not real!
+
+The other main information we obtain from principal components biplots is from
+the *observation scores* (see above). These will plot at locations similar to
+their dominant variables: for example, in \autoref{PCAplots}(b), the 'Compact'
+cities all plot towards the top of the biplot in the same direction as the
+'Compact' variable weighting vector. This suggests that compact cities have
+greater proportions of compact land use -- which should not be too surprising!
+Note that in the biplot for closed data in \autoref{PCAplots}(a), the separation
+of cities is not so clear.
+
+**Some other things to try**
+
+We could also group the observation scores in our biplot by a different factor
+in our dataset. For example, it would be interesting to see if we could observe
+any separation of cities by geographical region in the principal components
+analysis. You might want to practice your **R** coding on this problem!
+
+### References and R Packages
+
+Fox, J. (2022). *RcmdrMisc: R Commander Miscellaneous Functions*. R package
+version 2.7-2. <https://CRAN.R-project.org/package=RcmdrMisc>
+
+John Fox and Sanford Weisberg (2019). *An {R} Companion to Applied Regression*
+(**car**), Third Edition. Thousand Oaks CA: Sage. URL:
+<https://socialsciences.mcmaster.ca/jfox/Books/Companion/>
+
+Garrett, R.G. (2018). *rgr: Applied Geochemistry EDA*. R package version 1.1.15.
+<https://CRAN.R-project.org/package=rgr>
+
+Hu, J., Wang, Y., Taubenböck, H., Zhu, X.X. (2021). Land consumption in cities:
+A comparative study across the globe. *Cities*, **113**: 103163,
+<https://doi.org/10.1016/j.cities.2021.103163>.
+
+Kassambara, A. and Mundt, F. (2020). *factoextra: Extract and Visualize the
+Results of Multivariate Data Analyses*. R package version 1.0.7.
+<https://CRAN.R-project.org/package=factoextra>
+
+Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., Hornik, K.(2021). *cluster:
+Cluster Analysis Basics and Extensions*. R package version 2.1.2.
+<https://CRAN.R-project.org/package=cluster>
+
+Reimann, C., Filzmoser, P., Garrett, R. G., & Dutter, R. (2008). *Statistical
+Data Analysis Explained: Applied Environmental Statistics with R* (First ed.).
+John Wiley & Sons, Chichester, UK.
+
+Venables, W. N. & Ripley, B. D. (2002) *Modern Applied Statistics with S*
+(**MASS**). Fourth Edition. Springer, New York. ISBN 0-387-95457-0.
+<http://www.stats.ox.ac.uk/pub/MASS4/>
+
+Wickham, H. (2019). *stringr: Simple, Consistent Wrappers for Common String
+Operations*. R package version 1.4.0.
+<https://CRAN.R-project.org/package=stringr>
+
+Xu, N., Rate, A. W., & Morgan, B. (2018). From source to sink: Rare-earth
+elements trace the legacy of sulfuric dredge spoils on estuarine sediments.
+*Science of The Total Environment*, **637-638**, 1537-1549.
+<https://doi.org/10.1016/j.scitotenv.2018.04.398>
